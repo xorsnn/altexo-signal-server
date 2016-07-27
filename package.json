@@ -1,0 +1,23 @@
+{
+  "name": "altexo-signal-service",
+  "version": "0.0.1",
+  "description": "Application server for Altexo project.",
+  "private": true,
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "altexo",
+    "signal",
+    "service",
+    "kurento"
+  ],
+  "author": "Konstantin Kopkov",
+  "dependencies": {
+    "express": "^4.14.0",
+    "kurento-client": "^6.5.0",
+    "nconf": "^0.8.4",
+    "ws": "^1.1.1"
+  }
+}
