@@ -38,8 +38,8 @@ class RoomList
   create: (name, user) ->
     if this.exists(name)
       throw new Error('room already exists')
-    room = new Room(user)
-    this.rooms.add(name, room)
+    room = new Room(name, user)
+    this.rooms.set(name, room)
     return room
 
   close: (name) ->
@@ -47,7 +47,7 @@ class RoomList
       throw new Error('room does not exist')
     room = this.rooms.get(name)
     room.close()
-    this.rooms.delete(room)
+    this.rooms.delete(name)
 
   enter: (name, user) ->
     unless this.exists(name)

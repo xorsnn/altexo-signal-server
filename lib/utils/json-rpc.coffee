@@ -119,16 +119,16 @@ class JsonRpc extends EventEmitter
 
     unless request.id
       # this is notification
-      method = this.rpcNotify[method]
+      method = this.rpcNotify[request.method]
       unless 'function' == typeof method
         return
       try
         if Array.isArray(request.params)
-          result = method.apply(null, request.params)
+          method.apply(null, request.params)
         else if request.params
-          result = method(request.params)
+          method(request.params)
         else
-          result = method()
+          method()
       catch e
         return
       return
@@ -161,10 +161,8 @@ class JsonRpc extends EventEmitter
       }
       return
 
-    unless result instanceof Promise
-      this._send { id: request.id, result }
-    else
-      result.then (result) =>
+    Promise.accept(result)
+      .then (result) =>
         this._send { id: request.id, result }
       .catch (error) =>
         this._send { id: request.id, error }

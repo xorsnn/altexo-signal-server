@@ -15,7 +15,7 @@
   "author": "Konstantin Kopkov",
   "dependencies": {
     "coffee-script": "^1.10.0",
-    "kurento-client": "^6.5.0",
+    "kurento-client": "Kurento/kurento-client-js",
     "nconf": "^0.8.4",
     "node-uuid": "^1.4.7",
     "request": "^2.74.0",
