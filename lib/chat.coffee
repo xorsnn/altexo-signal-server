@@ -1,6 +1,5 @@
 request = require 'request'
 nconf = require 'nconf'
-kurento = require 'kurento-client'
 
 Registry = require './registry.coffee'
 RoomList = require './room-list.coffee'
@@ -10,10 +9,14 @@ JsonRpc = require './utils/json-rpc.coffee'
 
 module.exports = (server, kurentoClient) ->
 
+  KurentoRoom = (require './kurento-room.coffee')(kurentoClient)
+  # P2PRoom = require './p2p-room.coffee'
+
+
   class ChatRpc extends JsonRpc
 
     registry = new Registry()
-    roomList = new RoomList()
+    rooms = new Map()
 
     ChatError = {
       AUTH_SERVICE_BROKEN: -32000
@@ -23,31 +26,31 @@ module.exports = (server, kurentoClient) ->
       ONLY_ONE_ROOM_ALLOWED: 1003
       ROOM_NAME_OCCUPIED: 1004
       ROOM_NOT_FOUND: 1005
-      NEED_NO_OFFER_NOW: 1006
+      OFFER_DISCARDED: 1006
+      NOT_IN_ROOM: 1007
     }
 
     id: null
     isAuthenticated: false
     room: null
 
-    pipeline: null
-    candidatesQueue: null
-
     onAttach: ->
       this.id = registry.add(this)
-      this.candidatesQueue = []
 
     onDetach: ->
-      if this.webRtcEndpoint
-        this.webRtcEndpoint.release()
-        this.webRtcEndpoint = null
-
       if this.room
-        roomList.leave(this.room.name, this)
-        this.room = null
+        this._leaveRoom()
 
       registry.remove(this.id)
       this.id = null
+
+    _leaveRoom: ->
+      room = this.room
+      this.room = null
+      if this is room.creator
+        rooms.delete(room.name)
+        return room.close()
+      return room.removeUser(this)
 
     rpc: {
       'authenticate': (token) ->
@@ -83,36 +86,62 @@ module.exports = (server, kurentoClient) ->
             message: 'user is in other room now'
           }
 
-        if roomList.exists(name)
+        if rooms.has(name)
           return Promise.reject {
             code: ChatError.ROOM_NAME_OCCUPIED
             message: 'room already exists'
           }
 
-        this.room = roomList.create(name, this)
-        this.room.on 'close', =>
-          if this.pipeline
-            this.pipeline.release()
-            this.pipeline = null
+        this.room = new KurentoRoom(name)
+        rooms.set(name, this.room)
+
+        this.room.open(this)
+        .then -> true
+        .then null, (error) =>
+          rooms.delete(name)
           this.room = null
 
-        kurentoClient.create('MediaPipeline')
-        .then (pipeline) =>
-          this.pipeline = pipeline
-          this.pipeline.create('WebRtcEndpoint')
-        .then (webRtcEndpoint) =>
-          this.webRtcEndpoint = webRtcEndpoint
+          Promise.reject {
+            code: ChatError.KURENTO_ERROR
+            message: error.message
+          }
 
-          while this.candidatesQueue.length
-            candidate = this.candidatesQueue.shift()
-            this.webRtcEndpoint.addIceCandidate(candidate)
+      'watch-room': (name) ->
+        if this.room
+          return Promise.reject {
+            code: ChatError.ONLY_ONE_ROOM_ALLOWED
+            message: 'user is in other room now'
+          }
 
-          this.webRtcEndpoint.on 'OnIceCandidate', (ev) =>
-            candidate = (kurento.getComplexType 'IceCandidate')(ev.candidate)
-            this.notify('ice-candidate', [candidate])
+        unless rooms.has(name)
+          return Promise.reject {
+            code: ChatError.ROOM_NOT_FOUND
+            message: 'room is not found'
+          }
 
-          return true
+        this.room = rooms.get(name)
+        this.room.on 'close', =>
+          this.room = null
 
+        this.room.addUser(this)
+        .then -> true
+        .then null, (error) =>
+          this.room = null
+
+          Promise.reject {
+            code: ChatError.KURENTO_ERROR
+            message: error.message
+          }
+
+      'leave-room': ->
+        unless this.room
+          return Promise.reject {
+            code: ChatError.NOT_IN_ROOM
+            message: 'not in a room'
+          }
+
+        this._leaveRoom()
+        .then -> true
         .then null, (error) ->
           Promise.reject {
             code: ChatError.KURENTO_ERROR
@@ -120,56 +149,29 @@ module.exports = (server, kurentoClient) ->
           }
 
       'offer': (offerSdp) ->
-        unless this.webRtcEndpoint
+        unless this.room
           return Promise.reject {
-            code: ChatError.NEED_NO_OFFER_NOW
+            code: ChatError.OFFER_DISCARDED
             message: 'offer discarded'
           }
 
-        this.webRtcEndpoint.processOffer(offerSdp)
-        .then (answerSdp) =>
-          this.webRtcEndpoint.connect(this.webRtcEndpoint)
-          .then => this.webRtcEndpoint.gatherCandidates()
-
-          return answerSdp
-
+        this.room.processOffer(this, offerSdp)
         .then null, (error) ->
           Promise.reject {
             code: ChatError.KURENTO_ERROR
             message: error.message
           }
-
-      'watch-room': (name) ->
-        unless roomList.exists(name)
-          return Promise.reject {
-            code: ChatError.ROOM_NOT_FOUND
-            message: 'room is not found'
-          }
-
-        if this.room
-          return Promise.reject {
-            code: ChatError.ONLY_ONE_ROOM_ALLOWED
-            message: 'user is in other room now'
-          }
-
-        this.room = roomList.enter(name, this)
-        this.room.on 'close', =>
-          this.room = null
-
-        return Promise.resolve(true)
     }
 
     rpcNotify: {
       'ice-candidate': (candidate) ->
-        candidate = (kurento.getComplexType 'IceCandidate')(candidate)
-
-        unless this.webRtcEndpoint
-          this.candidatesQueue.push(candidate)
-        else
-          this.webRtcEndpoint.addIceCandidate(candidate)
-
-        return
+        unless this.room
+          return
+        this.room.processIceCandidate(this, candidate)
     }
+
+    sendCandidate: (candidate) ->
+      this.notify('ice-candidate', [candidate])
 
     notifyPeer: (id, method, params) ->
       peer = registry.getPeer(id)
@@ -180,20 +182,21 @@ module.exports = (server, kurentoClient) ->
     requestPeer: (id, method, params) ->
       peer = registry.getPeer(id)
       unless peer
-        return Q.reject {
+        return Promise.reject {
           code: ChatError.PEER_NOT_FOUND
           message: 'peer is not found'
         }
       peer.request(method, params)
 
-  server.on 'connection', (ws) ->
 
-    console.log '>> client connected'
+  server.on 'connection', (ws) ->
 
     handler = new ChatRpc()
     handler.attach(ws)
 
+    # console.log '>> client connected', handler.id
+
     ws.on 'close', ->
-      console.log '>> client disconnected'
+      # console.log '>> client disconnected', handler.id
 
       handler.detach()

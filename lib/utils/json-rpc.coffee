@@ -1,16 +1,15 @@
 EventEmitter = require('events').EventEmitter
 
 
-RpcError = {
-  PARSE_ERROR: -32700
-  INVALID_REQUEST: -32600
-  METHOD_NOT_FOUND: -32601
-  INVALID_PARAMS: -32602
-  INTERNAL_ERROR: -32603
-}
-
-
 class JsonRpc extends EventEmitter
+
+  RpcError = {
+    PARSE_ERROR: -32700
+    INVALID_REQUEST: -32600
+    METHOD_NOT_FOUND: -32601
+    INVALID_PARAMS: -32602
+    INTERNAL_ERROR: -32603
+  }
 
   rpc: {}
   rpcNotify: {}
@@ -88,6 +87,7 @@ class JsonRpc extends EventEmitter
     this.onClose()
 
   _handleMessage: (message) =>
+    # console.log '=>', message
     try
       request = JSON.parse(message)
     catch e
@@ -162,14 +162,15 @@ class JsonRpc extends EventEmitter
       return
 
     Promise.accept(result)
-      .then (result) =>
-        this._send { id: request.id, result }
-      .catch (error) =>
-        this._send { id: request.id, error }
+    .then (result) => this._send { id: request.id, result }
+    .catch (error) => this._send { id: request.id, error }
 
     return
 
   _send: (message) ->
+    # this._ws.send(message = JSON.stringify(message))
+    # console.log '<=', message
+
     this._ws.send(JSON.stringify(message))
 
 
