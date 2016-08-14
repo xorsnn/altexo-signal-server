@@ -20,7 +20,7 @@ module.exports = (kurentoClient) ->
       super()
 
     open: (user) ->
-      # console.log '>> open room', this.name
+      console.log '>> open room', this.name
 
       this._endpoints = new Map()
       this._candidateQueues = new Map()
@@ -32,7 +32,7 @@ module.exports = (kurentoClient) ->
       .then => this._addUser(user)
 
     close: ->
-      # console.log '>> close room', this.name
+      console.log '>> close room', this.name
 
       Promise.all(Array.from(this.members, (user) => this._removeUser(user)))
       .then => this._pipeline.release()
@@ -41,9 +41,10 @@ module.exports = (kurentoClient) ->
     addUser: (user) ->
       this._addUser(user).then =>
         this.emit('user:enter', user)
+        return true
 
     _addUser: (user) ->
-      # console.log '>> add user', user.id
+      console.log '>> add user', user.id
 
       this.members.add(user)
       this._createEndpoint(user)
@@ -53,9 +54,10 @@ module.exports = (kurentoClient) ->
         throw new Error('cannot remove not existing user')
       this._removeUser(user).then =>
         this.emit('user:leave', user)
+        return true
 
     _removeUser: (user) ->
-      # console.log '>> remove user', user.id
+      console.log '>> remove user', user.id
 
       this.members.delete(user)
       this._releaseEndpoint(user)

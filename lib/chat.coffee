@@ -2,15 +2,13 @@ request = require 'request'
 nconf = require 'nconf'
 
 Registry = require './registry.coffee'
-RoomList = require './room-list.coffee'
-
 JsonRpc = require './utils/json-rpc.coffee'
 
 
 module.exports = (server, kurentoClient) ->
 
   KurentoRoom = (require './kurento-room.coffee')(kurentoClient)
-  # P2PRoom = require './p2p-room.coffee'
+  P2PRoom = require './p2p-room.coffee'
 
 
   class ChatRpc extends JsonRpc
@@ -73,7 +71,7 @@ module.exports = (server, kurentoClient) ->
             resolve(true)
         return auth.then => this.isAuthenticated = true
 
-      'create-room': (name) ->
+      'create-room': (name, p2p) ->
         unless this.isAuthenticated
           return Promise.reject {
             code: ChatError.NOT_AUTHENTICATED
@@ -92,7 +90,11 @@ module.exports = (server, kurentoClient) ->
             message: 'room already exists'
           }
 
-        this.room = new KurentoRoom(name)
+        unless p2p
+          this.room = new KurentoRoom(name)
+        else
+          this.room = new P2PRoom(name)
+
         rooms.set(name, this.room)
 
         this.room.open(this)
@@ -173,6 +175,9 @@ module.exports = (server, kurentoClient) ->
     sendCandidate: (candidate) ->
       this.notify('ice-candidate', [candidate])
 
+    sendOffer: (offerSdp) ->
+      this.request('offer', [offerSdp])
+
     notifyPeer: (id, method, params) ->
       peer = registry.getPeer(id)
       unless peer
@@ -194,9 +199,9 @@ module.exports = (server, kurentoClient) ->
     handler = new ChatRpc()
     handler.attach(ws)
 
-    # console.log '>> client connected', handler.id
+    console.log '>> client connected', handler.id
 
     ws.on 'close', ->
-      # console.log '>> client disconnected', handler.id
+      console.log '>> client disconnected', handler.id
 
       handler.detach()
