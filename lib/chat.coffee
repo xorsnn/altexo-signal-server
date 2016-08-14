@@ -7,8 +7,8 @@ JsonRpc = require './utils/json-rpc.coffee'
 
 module.exports = (server, kurentoClient) ->
 
-  KurentoRoom = (require './kurento-room.coffee')(kurentoClient)
-  P2PRoom = require './p2p-room.coffee'
+  KurentoRoom = (require './rooms/kurento.coffee')(kurentoClient)
+  P2PRoom = require './rooms/p2p.coffee'
 
 
   class ChatRpc extends JsonRpc

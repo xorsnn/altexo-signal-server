@@ -1,23 +1,14 @@
-EventEmitter = (require 'events').EventEmitter
 kurento = require 'kurento-client'
+BaseRoom = require './base.coffee'
 
 
 module.exports = (kurentoClient) ->
 
-  class KurentoRoom extends EventEmitter
-
-    name: null
-    creator: null
-    members: null
+  class KurentoRoom extends BaseRoom
 
     _pipeline: null
     _endpoints: null
     _candidateQueues: null
-
-    constructor: (name) ->
-      this.name = name
-      this.members = new Set()
-      super()
 
     open: (user) ->
       console.log '>> open room', this.name

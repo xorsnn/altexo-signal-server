@@ -1,22 +1,13 @@
-EventEmitter = (require 'events').EventEmitter
+BaseRoom = require './base.coffee'
 
 
-class P2PRoom extends EventEmitter
+class P2PRoom extends BaseRoom
 
   RoomError = {
     ONLY_TWO_PERSONS_ALLOWED: 2001
   }
 
-  name: null
-  creator: null
-  members: null
-
   _peer: null
-
-  constructor: (name) ->
-    this.name = name
-    this.members = new Set()
-    super()
 
   open: (user) ->
     console.log '>> open p2p room'
