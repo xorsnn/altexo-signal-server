@@ -5,6 +5,8 @@
 * соединения не являются stateless;
 * при обмене сообщениями поле `jsonrpc` не используется.
 
+## Back-end ##
+
 ### Запросы ###
 
 * `authenticate [ token ] -> boolean` аутентификация соединения;
@@ -16,4 +18,14 @@
 
 ### Уведомления ###
 
-* `room/ice-candidate [ candidate ]` отправление обнаруженного ICE candidate.
+* `room/ice-candidate [ candidate ]` передача обнаруженного ICE candidate.
+
+## Front-end ##
+
+### Запросы ###
+
+* `offer [ offerSdp ] -> answerSdp` отправление SDP предложения и получение SDP отклика в результате.
+
+### Уведомления ###
+
+* `ice-candidate [ candidate ]` передача обрнаруженного ICE candidate.
