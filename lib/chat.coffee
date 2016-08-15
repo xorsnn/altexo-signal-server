@@ -17,16 +17,28 @@ module.exports = (server, kurentoClient) ->
     rooms = new Map()
 
     ChatError = {
-      AUTH_SERVICE_BROKEN: -32000
-      KURENTO_ERROR: -32001
-      NOT_AUTHENTICATED: 1001
-      PEER_NOT_FOUND: 1002
-      ONLY_ONE_ROOM_ALLOWED: 1003
-      ROOM_NAME_OCCUPIED: 1004
-      ROOM_NOT_FOUND: 1005
-      OFFER_DISCARDED: 1006
-      NOT_IN_ROOM: 1007
+      NOT_AUTHENTICATED:
+        { code: 1001, message: 'not authenticated' }
+      PEER_NOT_FOUND:
+        { code: 1002, message: 'peer is not found'}
+      ROOM_NOT_FOUND:
+        { code: 1003, message: 'room is not found' }
+      CURRENT_ROOM_PRESENT:
+        { code: 1004, message: 'current room is already present' }
+      NO_CURRENT_ROOM:
+        { code: 1005, message: 'no current room' }
+      ROOM_NAME_OCCUPIED:
+        { code: 1006, message: 'room name occupied' }
+      NOT_AUTHORIZED:
+        { code: 1007, message: 'not authorized' }
+      REQUEST_AUTH_ERROR: \
+        (e) -> { code: -32000, message: "#{e.toString()}" }
+      RAW_ERROR: \
+        (e) -> { code: -32001, message: "#{e.message}" }
     }
+
+    _truthy = (promisable) ->
+      promisable.then -> true
 
     id: null
     isAuthenticated: false
@@ -42,13 +54,11 @@ module.exports = (server, kurentoClient) ->
       registry.remove(this.id)
       this.id = null
 
-    _leaveRoom: ->
-      room = this.room
-      this.room = null
-      if this is room.creator
-        rooms.delete(room.name)
-        return room.close()
-      return room.removeUser(this)
+    sendCandidate: (candidate) ->
+      this.notify('ice-candidate', [candidate])
+
+    sendOffer: (offerSdp) ->
+      this.request('offer', [offerSdp])
 
     rpc: {
       'authenticate': (token) ->
@@ -59,124 +69,80 @@ module.exports = (server, kurentoClient) ->
           }
           request authRequest, (error, response, body) ->
             if error
-              return reject {
-                code: ChatError.AUTH_SERVICE_BROKEN
-                message: error.toString()
-              }
+              return reject(ChatError.REQUEST_AUTH_ERROR(error))
             unless response.statusCode == 200
-              return reject {
-                code: ChatError.NOT_AUTHENTICATED
-                message: 'invalid token'
-              }
+              return reject(ChatError.NOT_AUTHENTICATED)
             resolve(true)
         return auth.then => this.isAuthenticated = true
 
-      'create-room': (name, p2p) ->
+      'room/open': (name, p2p) ->
         unless this.isAuthenticated
-          return Promise.reject {
-            code: ChatError.NOT_AUTHENTICATED
-            message: 'not authenticated'
-          }
+          return Promise.reject(ChatError.NOT_AUTHENTICATED)
 
         if this.room
-          return Promise.reject {
-            code: ChatError.ONLY_ONE_ROOM_ALLOWED
-            message: 'user is in other room now'
-          }
+          return Promise.reject(ChatError.CURRENT_ROOM_PRESENT)
 
         if rooms.has(name)
-          return Promise.reject {
-            code: ChatError.ROOM_NAME_OCCUPIED
-            message: 'room already exists'
-          }
+          return Promise.reject(ChatError.ROOM_NAME_OCCUPIED)
 
         unless p2p
-          this.room = new KurentoRoom(name)
+          room = new KurentoRoom(name)
         else
-          this.room = new P2PRoom(name)
+          room = new P2PRoom(name)
 
-        rooms.set(name, this.room)
+        rooms.set(name, room)
 
-        this.room.open(this)
-        .then -> true
-        .then null, (error) =>
-          rooms.delete(name)
-          this.room = null
+        _truthy(room.open(this).then =>
+          this.room = rooms.set(name, room).get(name))
+        .then null, ChatError.RAW_ERROR
 
-          Promise.reject {
-            code: ChatError.KURENTO_ERROR
-            message: error.message
-          }
+      'room/close': ->
+        unless this.room
+          return Promise.reject(ChatError.NO_CURRENT_ROOM)
 
-      'watch-room': (name) ->
+        unless this is this.room.creator
+          return Promise.reject(ChatError.NOT_AUTHORIZED)
+
+        room = this.room
+        this.room = null
+
+        rooms.delete(room.name)
+        _truthy(room.close())
+        .then null, ChatError.RAW_ERROR
+
+      'room/enter': (name) ->
         if this.room
-          return Promise.reject {
-            code: ChatError.ONLY_ONE_ROOM_ALLOWED
-            message: 'user is in other room now'
-          }
+          return Promise.reject(ChatError.CURRENT_ROOM_PRESENT)
 
         unless rooms.has(name)
-          return Promise.reject {
-            code: ChatError.ROOM_NOT_FOUND
-            message: 'room is not found'
-          }
+          return Promise.reject(ChatError.ROOM_NOT_FOUND)
 
-        this.room = rooms.get(name)
-        this.room.on 'close', =>
-          this.room = null
+        room = rooms.get(name)
 
-        this.room.addUser(this)
-        .then -> true
-        .then null, (error) =>
-          this.room = null
+        _truthy(room.addUser(this).then => this.room = room)
+        .then null, ChatError.RAW_ERROR
 
-          Promise.reject {
-            code: ChatError.KURENTO_ERROR
-            message: error.message
-          }
-
-      'leave-room': ->
+      'room/leave': ->
         unless this.room
-          return Promise.reject {
-            code: ChatError.NOT_IN_ROOM
-            message: 'not in a room'
-          }
+          return Promise.reject(ChatError.NO_CURRENT_ROOM)
 
-        this._leaveRoom()
-        .then -> true
-        .then null, (error) ->
-          Promise.reject {
-            code: ChatError.KURENTO_ERROR
-            message: error.message
-          }
+        _truthy(this._leaveRoom())
+        .then null, ChatError.RAW_ERROR
 
-      'offer': (offerSdp) ->
+      'room/offer': (offerSdp) ->
         unless this.room
-          return Promise.reject {
-            code: ChatError.OFFER_DISCARDED
-            message: 'offer discarded'
-          }
+          return Promise.reject(ChatError.NO_CURRENT_ROOM)
 
         this.room.processOffer(this, offerSdp)
-        .then null, (error) ->
-          Promise.reject {
-            code: ChatError.KURENTO_ERROR
-            message: error.message
-          }
+        .then null, ChatError.RAW_ERROR
     }
 
     rpcNotify: {
-      'ice-candidate': (candidate) ->
+      'room/ice-candidate': (candidate) ->
         unless this.room
           return
         this.room.processIceCandidate(this, candidate)
     }
-
-    sendCandidate: (candidate) ->
-      this.notify('ice-candidate', [candidate])
-
-    sendOffer: (offerSdp) ->
-      this.request('offer', [offerSdp])
 
     notifyPeer: (id, method, params) ->
       peer = registry.getPeer(id)
@@ -187,11 +153,16 @@ module.exports = (server, kurentoClient) ->
     requestPeer: (id, method, params) ->
       peer = registry.getPeer(id)
       unless peer
-        return Promise.reject {
-          code: ChatError.PEER_NOT_FOUND
-          message: 'peer is not found'
-        }
+        return Promise.reject(ChatError.PEER_NOT_FOUND)
       peer.request(method, params)
+
+    _leaveRoom: ->
+      room = this.room
+      this.room = null
+      if this is room.creator
+        rooms.delete(room.name)
+        return room.close()
+      return room.removeUser(this)
 
 
   server.on 'connection', (ws) ->
