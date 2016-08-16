@@ -46,13 +46,12 @@ def virtual():
 def install():
     require('stage', provided_by=(production, testing, virtual,))
 
-    with settings(warn_only=True):
-        if run('test -d /srv/altexo/signal').failed:
-            install_project()
-        if run('test -f /etc/supervisor/conf.d/altexo-signal.conf').failed:
-            install_supervisor_conf()
-        if run('test -f /srv/altexo/_nginx_conf/signal.conf').failed:
-            install_nginx_conf()
+    if not exists('/srv/altexo/signal'):
+        install_project()
+    if not exists('/etc/supervisor/conf.d/altexo-signal.conf'):
+        install_supervisor_conf()
+    if not exists('/srv/altexo/_nginx_conf/signal.conf'):
+        install_nginx_conf()
 
 @task
 def uninstall():
@@ -75,7 +74,7 @@ def install_project():
     with cd('/srv/altexo'):
         run('git clone git@bitbucket.org:altexo/altexo-signal-node.git signal')
     with cd('/srv/altexo/signal'):
-        run('npm install')
+        run('source ~/.nvm/nvm.sh && npm install')
 
 @task
 def uninstall_project():
