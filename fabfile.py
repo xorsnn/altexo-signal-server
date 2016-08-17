@@ -21,7 +21,7 @@ STAGES = {
     },
     'virtual': {
         'hosts': ['altexo@localhost:2222'],
-        'config_script': 'scripts/config/setup_env_virtual'
+        'config_script': 'scripts/config/setup_env_development'
     }
 }
 
@@ -122,6 +122,7 @@ def deploy():
     with cd('/srv/altexo/signal'):
         run('git checkout .')
         run('git pull')
+        run('rm -f scripts/setup_env && ln -rs ./%s scripts/setup_env' % env.config_script)
         run('source ~/.nvm/nvm.sh && npm update')
 
     sudo('supervisorctl restart altexo-signal')
@@ -136,8 +137,9 @@ def deploy_rsync():
         exclude=['.git/', 'node_modules/', '__pycache__/', '*.pyc'],
         default_opts='-pvthrz', delete=True)
 
-    # with cd('/srv/altexo/signal'):
-    #     run('source ~/.nvm/nvm.sh && npm update')
+    with cd('/srv/altexo/signal'):
+        run('rm -f scripts/setup_env && ln -rs ./%s scripts/setup_env' % env.config_script)
+        # run('source ~/.nvm/nvm.sh && npm update')
 
     # sudo('supervisorctl restart altexo-signal')
     # sudo('service nginx restart')

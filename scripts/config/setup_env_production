@@ -1,0 +1,4 @@
+#!/bin/bash
+
+export ALTEXO_CHAT_CONFIG=config/prod.json
+
