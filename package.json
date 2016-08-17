@@ -3,6 +3,9 @@
   "version": "0.0.1",
   "description": "Application server for Altexo project.",
   "private": true,
+  "engines": {
+    "node": "~6.2.0"
+  },
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -19,6 +22,6 @@
     "nconf": "^0.8.4",
     "node-uuid": "^1.4.7",
     "request": "^2.74.0",
-    "ws": "1.0.1"
+    "ws": "1.1.1"
   }
 }
