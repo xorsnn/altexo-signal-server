@@ -21,6 +21,7 @@
     "kurento-client": "Kurento/kurento-client-js",
     "nconf": "^0.8.4",
     "node-uuid": "^1.4.7",
+    "raven": "^0.12.1",
     "request": "^2.74.0",
     "ws": "1.1.1"
   }

@@ -1,4 +1,5 @@
 nconf = require 'nconf'
+raven = require 'raven'
 kurento = require 'kurento-client'
 ws = require 'ws'
 
@@ -9,6 +10,8 @@ nconf.argv().defaults {
   path: '/chat'
   auth:
     me: 'http://unix:/tmp/altexo-accounts.sock:/users/auth/me/'
+  sentry:
+    url: 'https://cdaedca4cea24fd19d2a9e66d0ef7b18:346c4bb4e8c24f0883e10df1f6a86aa0@sentry.altexo.com/4'
   kurento:
     url: 'ws://localhost:8080/kurento'
     options:
@@ -16,6 +19,17 @@ nconf.argv().defaults {
       failAfter: 1
       strict: true
 }
+
+
+sentryClient = null
+if nconf.get('sentry:url')
+  sentryClient = new raven.Client(nconf.get('sentry:url'))
+  sentryClient.patchGlobal (isLogged, error) ->
+    console.log 'error:', error.message
+    console.log 'error: sentry report', \
+      (if isLogged then 'sent' else 'not sent')
+    process.exit(1)
+
 
 kurento(nconf.get('kurento:url'), nconf.get('kurento:options'))
 .then (kurentoClient) ->
@@ -28,7 +42,12 @@ kurento(nconf.get('kurento:url'), nconf.get('kurento:options'))
     }
 
     wss = ws.Server(serverOptions, resolve)
+
     require('./chat.coffee')(wss, kurentoClient)
+
+    if sentryClient
+      wss.on 'error', (error) ->
+        sentryClient.captureException(error)
 
 .then ->
   console.log 'server: started at',
