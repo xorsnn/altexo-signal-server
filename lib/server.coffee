@@ -1,6 +1,6 @@
-ws = require 'ws'
 nconf = require 'nconf'
 kurento = require 'kurento-client'
+ws = require 'ws'
 
 
 nconf.argv().defaults {
@@ -12,21 +12,28 @@ nconf.argv().defaults {
   kurento:
     url: 'ws://localhost:8080/kurento'
     options:
-      failAfter: 5
-}
-
-serverOptions = {
-  host: nconf.get('host')
-  port: nconf.get('port')
-  path: nconf.get('path')
+      # access_token: 'weanOshEtph7'
+      failAfter: 1
+      strict: true
 }
 
 kurento(nconf.get('kurento:url'), nconf.get('kurento:options'))
 .then (kurentoClient) ->
-  wss = ws.Server serverOptions, ->
-    console.log 'server: started at', \
-      "#{nconf.get 'host'}:#{nconf.get 'port'}"
 
-  require('./chat.coffee')(wss, kurentoClient)
+  return new Promise (resolve) ->
+    serverOptions = {
+      host: nconf.get('host')
+      port: nconf.get('port')
+      path: nconf.get('path')
+    }
+
+    wss = ws.Server(serverOptions, resolve)
+    require('./chat.coffee')(wss, kurentoClient)
+
+.then ->
+  console.log 'server: started at',
+    "#{nconf.get 'host'}:#{nconf.get 'port'}"
+
 .catch (error) ->
-  console.log 'kurento:', error.message
+  console.log 'error:', error.message
+
