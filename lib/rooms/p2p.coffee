@@ -35,7 +35,7 @@ class P2PRoom extends BaseRoom
       }
     console.log '>> add p2p user', user.id
     this.members.add(user)
-    if user is not this.creator
+    unless user is this.creator
       this._peer = user
     return Promise.resolve(true)
 
