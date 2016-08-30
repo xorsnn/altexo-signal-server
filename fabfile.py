@@ -120,6 +120,7 @@ def deploy():
     require('stage', provided_by=(production, testing, virtual,))
 
     with cd('/srv/altexo/signal'):
+        run('git checkout dev')
         run('git checkout .')
         run('git pull')
         run('rm -f scripts/setup_env && ln -rs ./%s scripts/setup_env' % env.config_script)
