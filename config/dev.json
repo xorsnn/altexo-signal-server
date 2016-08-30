@@ -24,7 +24,7 @@
     "turn_url": "https://computeengineondemand.appspot.com/turn?username=62427805&key=4080218913",
     "version_info": "{\"gitHash\": \"c135495bc71e5da61344f098a8209a255f64985f\", \"branch\": \"master\", \"time\": \"Fri Apr 8 13:33:05 2016 +0200\"}",
     "warning_messages": [],
-    "wss_post_url": "https://dev.lugati.ru/chat/api",
-    "wss_url": "wss://dev.lugati.ru/chat/"
+    "wss_post_url": "https://dev.lugati.ru/al_chat/api",
+    "wss_url": "wss://dev.lugati.ru/al_chat/"
   }
 }

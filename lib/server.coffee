@@ -9,7 +9,7 @@ nconf.file(config) if (config = nconf.get('config'))
 nconf.defaults {
   host: 'localhost'
   port: 8888
-  path: '/chat'
+  path: '/al_chat'
   auth:
     me: 'http://unix:/tmp/altexo-accounts.sock:/users/auth/me/'
   sentry:
