@@ -1,6 +1,6 @@
 {
   "auth": {
-    "me": "https://unix:/tmp/altexo-accounts.sock:/users/auth/me/"
+    "me": "http://unix:/tmp/altexo-accounts.sock:/users/auth/me/"
   },
   "sentry": {
     "url": false
