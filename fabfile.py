@@ -139,7 +139,7 @@ def deploy_rsync():
         default_opts='-pvthrz', delete=True)
 
     with cd('/srv/altexo/signal'):
-        run('rm -f scripts/setup_env && node -v && ln -rs ./%s scripts/setup_env' % env.config_script)
+        run('rm -f scripts/setup_env && ln -rs ./%s scripts/setup_env' % env.config_script)
         # run('source ~/.nvm/nvm.sh && npm update')
 
     # sudo('supervisorctl restart altexo-signal')
