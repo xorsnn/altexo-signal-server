@@ -65,7 +65,11 @@ module.exports = (server, kurentoClient) ->
         auth = new Promise (resolve, reject) ->
           authRequest = {
             url: nconf.get('auth:me')
-            headers: { 'Authorization': "Token #{token}" }
+            headers: {
+              'Authorization': "Token #{token}"
+              # NOTE: needed to turn off debug mode in django
+              'Host': 'localhost'
+            }
           }
           request authRequest, (error, response, body) ->
             if error
