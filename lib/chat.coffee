@@ -96,7 +96,8 @@ module.exports = (server, kurentoClient) ->
         if rooms.has(name)
           return Promise.reject(ChatError.ROOM_NAME_OCCUPIED)
 
-        unless p2p
+        # TODO: make this decision based on payment
+        unless p2p or adHoc
           room = new KurentoRoom(name)
         else
           room = new P2PRoom(name)
