@@ -32,9 +32,9 @@ module.exports = (server, kurentoClient) ->
       NOT_AUTHORIZED:
         { code: 1007, message: 'not authorized' }
       REQUEST_AUTH_ERROR: \
-        (e) -> { code: -32000, message: "#{e.toString()}" }
+        (e) -> { code: - 32000, message: "#{e.toString()}" }
       RAW_ERROR: \
-        (e) -> { code: -32001, message: "#{e.message}" }
+        (e) -> { code: - 32001, message: "#{e.message}" }
     }
 
     _truthy = (promisable) ->
@@ -43,6 +43,10 @@ module.exports = (server, kurentoClient) ->
     id: null
     isAuthenticated: false
     room: null
+
+    # used for peer to peer connection (without using media server),
+    # used for both not registered and not paid users
+    adHoc: true
 
     onAttach: ->
       this.id = registry.add(this)
@@ -75,7 +79,10 @@ module.exports = (server, kurentoClient) ->
             if error
               return reject(ChatError.REQUEST_AUTH_ERROR(error))
             unless response.statusCode == 200
-              return reject(ChatError.NOT_AUTHENTICATED)
+              # TODO: consider not authenticated users to use adHoc mode
+              # return reject(ChatError.NOT_AUTHENTICATED)
+              resolve(true)
+            this.adHoc = false
             resolve(true)
         return auth.then => this.isAuthenticated = true
 
