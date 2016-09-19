@@ -106,6 +106,7 @@ def install_nginx_conf():
     sudo('mkdir -p /srv/altexo/_nginx_conf')
     with cd('/srv/altexo/signal'):
        sudo('cp scripts/config/nginx-locations.conf /srv/altexo/_nginx_conf/signal.conf')
+    sudo('service nginx restart')
 
 @task
 def uninstall_nginx_conf():
