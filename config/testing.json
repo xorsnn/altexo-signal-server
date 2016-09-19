@@ -9,7 +9,7 @@
     "url": "https://cdaedca4cea24fd19d2a9e66d0ef7b18:346c4bb4e8c24f0883e10df1f6a86aa0@sentry.altexo.com/4"
   },
   "kurento": {
-    "url": "ws://localhost:8080/kurento"
+    "url": "ws://localhost:8888/kurento"
   },
   "setup": {
     "bypass_join_confirmation": "false",
