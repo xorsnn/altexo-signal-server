@@ -1,6 +1,6 @@
 {
   "host": "localhost",
-  "port": 8888,
+  "port": 8080,
   "path": "/al_chat",
   "auth": {
     "me": "http://unix:/tmp/altexo-accounts.sock:/users/auth/me/"
