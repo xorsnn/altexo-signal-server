@@ -33,12 +33,16 @@ module.exports = (server, kurentoClient) ->
         { code: 1007, message: 'not authorized' }
       REQUEST_AUTH_ERROR: \
         (e) -> { code: - 32000, message: "#{e.toString()}" }
-      RAW_ERROR: \
-        (e) -> { code: - 32001, message: "#{e.message}" }
     }
 
     _truthy = (promisable) ->
       promisable.then -> true
+
+    _rawError = (e) ->
+      unless e.code and e.message
+        Promise.reject { code: -32001, message: "#{e.message}" }
+      else
+        Promise.reject(e)
 
     id: null
     isAuthenticated: false
@@ -64,7 +68,12 @@ module.exports = (server, kurentoClient) ->
     sendOffer: (offerSdp) ->
       this.request('offer', [offerSdp])
 
+    sendContactList: ->
+      this.notify('contact-list', [this.room.getContacts()])
+
     rpc: {
+      'id': -> this.id
+
       'authenticate': (token) ->
         auth = new Promise (resolve, reject) ->
           authRequest = {
@@ -79,16 +88,13 @@ module.exports = (server, kurentoClient) ->
             if error
               return reject(ChatError.REQUEST_AUTH_ERROR(error))
             unless response.statusCode == 200
-              # TODO: consider not authenticated users to use adHoc mode
-              # return reject(ChatError.NOT_AUTHENTICATED)
-              resolve(true)
-            this.adHoc = false
+              return reject(ChatError.NOT_AUTHENTICATED)
             resolve(true)
         return auth.then => this.isAuthenticated = true
 
       'room/open': (name, p2p) ->
-        unless this.isAuthenticated
-          return Promise.reject(ChatError.NOT_AUTHENTICATED)
+        # unless this.isAuthenticated
+        #   return Promise.reject(ChatError.NOT_AUTHENTICATED)
 
         if this.room
           return Promise.reject(ChatError.CURRENT_ROOM_PRESENT)
@@ -97,16 +103,23 @@ module.exports = (server, kurentoClient) ->
           return Promise.reject(ChatError.ROOM_NAME_OCCUPIED)
 
         # TODO: make this decision based on payment
-        unless p2p or adHoc
+        unless p2p
           room = new KurentoRoom(name)
         else
           room = new P2PRoom(name)
 
-        rooms.set(name, room)
+        room.create(this)
+        .then =>
+          this.room = rooms.set(name, room).get(name)
 
-        _truthy(room.open(this).then =>
-          this.room = rooms.set(name, room).get(name))
-        .then null, ChatError.RAW_ERROR
+          this.room.on 'user:enter', =>
+            this.sendContactList()
+
+          this.room.on 'user:leave', =>
+            this.sendContactList()
+
+          return this.room.getProfile()
+        .then null, _rawError
 
       'room/close': ->
         unless this.room
@@ -120,7 +133,7 @@ module.exports = (server, kurentoClient) ->
 
         rooms.delete(room.name)
         _truthy(room.close())
-        .then null, ChatError.RAW_ERROR
+        .then null, _rawError
 
       'room/enter': (name) ->
         if this.room
@@ -129,24 +142,36 @@ module.exports = (server, kurentoClient) ->
         unless rooms.has(name)
           return Promise.reject(ChatError.ROOM_NOT_FOUND)
 
-        room = rooms.get(name)
+        rooms.get(name).addUser(this)
+        .then =>
+          this.room = rooms.get(name)
 
-        _truthy(room.addUser(this).then => this.room = room)
-        .then null, ChatError.RAW_ERROR
+          this.room.on 'user:enter', =>
+            this.sendContactList()
+
+          this.room.on 'user:leave', =>
+            this.sendContactList()
+
+          this.room.on 'destroy', =>
+            this.room = null
+            this.notify('room-destroyed')
+
+          return this.room.getProfile()
+        .then null, _rawError
 
       'room/leave': ->
         unless this.room
           return Promise.reject(ChatError.NO_CURRENT_ROOM)
 
         _truthy(this._leaveRoom())
-        .then null, ChatError.RAW_ERROR
+        .then null, _rawError
 
       'room/offer': (offerSdp) ->
         unless this.room
           return Promise.reject(ChatError.NO_CURRENT_ROOM)
 
         this.room.processOffer(this, offerSdp)
-        .then null, ChatError.RAW_ERROR
+        .then null, _rawError
     }
 
     rpcNotify: {

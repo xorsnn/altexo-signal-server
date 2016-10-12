@@ -9,22 +9,25 @@ class P2PRoom extends BaseRoom
 
   _peer: null
 
-  open: (user) ->
-    console.log '>> open p2p room'
+  getProfile: ->
+    Object.assign({ p2p: true }, super())
+
+  create: (user) ->
+    console.log '>> create p2p room'
 
     this.creator = user
     this.addUser(user)
 
-  close: ->
-    console.log '>> close p2p room'
+  destroy: ->
+    console.log '>> destroy p2p room'
 
-    this.emit('close')
-    return Promise.resolve(true)
+    this.emit('destroy')
+
+    Promise.resolve(true)
 
   addUser: (user) ->
     this._addUser(user).then =>
       this.emit('user:enter', user)
-      return true
 
   _addUser: (user) ->
     if this.members.size > 1
@@ -42,7 +45,6 @@ class P2PRoom extends BaseRoom
   removeUser: (user) ->
     this._removeUser(user).then =>
       this.emit('user:leave', user)
-      return true
 
   _removeUser: (user) ->
     unless this.members.has(user)
