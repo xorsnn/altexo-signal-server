@@ -87,7 +87,7 @@ class JsonRpc extends EventEmitter
     this.onClose()
 
   _handleMessage: (message) =>
-    console.log '=>', message
+    # console.log '=>', message
     try
       request = JSON.parse(message)
     catch e
@@ -168,10 +168,10 @@ class JsonRpc extends EventEmitter
     return
 
   _send: (message) ->
-    this._ws.send(message = JSON.stringify(message))
-    console.log '<=', message
+    # this._ws.send(message = JSON.stringify(message))
+    # console.log '<=', message
 
-    # this._ws.send(JSON.stringify(message))
+    this._ws.send(JSON.stringify(message))
 
 
 module.exports = JsonRpc
