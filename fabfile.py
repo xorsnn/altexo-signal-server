@@ -132,7 +132,7 @@ def deploy():
 
 
 @task
-def deploy_rsync():
+def deploy_rsync(restart=False, update=False):
     require('stage', provided_by=(testing, virtual,))
 
     rsync_project(local_dir='.', remote_dir='/srv/altexo/signal/',
@@ -141,7 +141,9 @@ def deploy_rsync():
 
     with cd('/srv/altexo/signal'):
         run('rm -f scripts/setup_env && ln -rs ./%s scripts/setup_env' % env.config_script)
-        # run('source ~/.nvm/nvm.sh && npm update')
+        if ('%s' % update).lower() in ('true', 'yes'):
+            run('source ~/.nvm/nvm.sh && npm update')
 
-    # sudo('supervisorctl restart altexo-signal')
-    # sudo('service nginx restart')
+    if ('%s' % restart).lower() in ('true', 'yes'):
+        sudo('supervisorctl restart altexo-signal')
+        sudo('service nginx restart')
