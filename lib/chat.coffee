@@ -3,6 +3,7 @@ nconf = require 'nconf'
 
 Registry = require './registry.coffee'
 JsonRpc = require './utils/json-rpc.coffee'
+ListenerMixin = require './utils/listener.coffee'
 
 
 module.exports = (server, kurentoClient) ->
@@ -12,6 +13,8 @@ module.exports = (server, kurentoClient) ->
 
 
   class ChatRpc extends JsonRpc
+
+    Object.assign( @::, ListenerMixin )
 
     registry = new Registry()
     rooms = new Map()
@@ -35,9 +38,6 @@ module.exports = (server, kurentoClient) ->
         (e) -> { code: - 32000, message: "#{e.toString()}" }
     }
 
-    _truthy = (promisable) ->
-      promisable.then -> true
-
     _rawError = (e) ->
       unless e.code and e.message
         Promise.reject { code: -32001, message: "#{e.message}" }
@@ -51,25 +51,6 @@ module.exports = (server, kurentoClient) ->
     # used for peer to peer connection (without using media server),
     # used for both not registered and not paid users
     adHoc: true
-
-    onAttach: ->
-      this.id = registry.add(this)
-
-    onDetach: ->
-      if this.room
-        this._leaveRoom()
-
-      registry.remove(this.id)
-      this.id = null
-
-    sendCandidate: (candidate) ->
-      this.notify('ice-candidate', [candidate])
-
-    sendOffer: (offerSdp) ->
-      this.request('offer', [offerSdp])
-
-    sendContactList: ->
-      this.notify('contact-list', [this.room.getContacts()])
 
     rpc: {
       'id': -> this.id
@@ -109,30 +90,8 @@ module.exports = (server, kurentoClient) ->
           room = new P2PRoom(name)
 
         room.create(this)
-        .then =>
-          this.room = rooms.set(name, room).get(name)
-
-          this.room.on 'user:enter', =>
-            this.sendContactList()
-
-          this.room.on 'user:leave', =>
-            this.sendContactList()
-
-          return this.room.getProfile()
-        .then null, _rawError
-
-      'room/close': ->
-        unless this.room
-          return Promise.reject(ChatError.NO_CURRENT_ROOM)
-
-        unless this is this.room.creator
-          return Promise.reject(ChatError.NOT_AUTHORIZED)
-
-        room = this.room
-        this.room = null
-
-        rooms.delete(room.name)
-        _truthy(room.close())
+        .then => this.connectRoom(rooms.set(name, room).get(name))
+        .then => this.room.getProfile()
         .then null, _rawError
 
       'room/enter': (name) ->
@@ -143,27 +102,27 @@ module.exports = (server, kurentoClient) ->
           return Promise.reject(ChatError.ROOM_NOT_FOUND)
 
         rooms.get(name).addUser(this)
-        .then =>
-          this.room = rooms.get(name)
+        .then => this.connectRoom(rooms.get(name))
+        .then => this.room.getProfile()
+        .then null, _rawError
 
-          this.room.on 'user:enter', =>
-            this.sendContactList()
+      'room/close': ->
+        unless this.room
+          return Promise.reject(ChatError.NO_CURRENT_ROOM)
 
-          this.room.on 'user:leave', =>
-            this.sendContactList()
+        unless this is this.room.creator
+          return Promise.reject(ChatError.NOT_AUTHORIZED)
 
-          this.room.on 'destroy', =>
-            this.room = null
-            this.notify('room-destroyed')
-
-          return this.room.getProfile()
+        this.disconnectRoom()
+        .then -> true
         .then null, _rawError
 
       'room/leave': ->
         unless this.room
           return Promise.reject(ChatError.NO_CURRENT_ROOM)
 
-        _truthy(this._leaveRoom())
+        this.disconnectRoom()
+        .then -> true
         .then null, _rawError
 
       'room/offer': (offerSdp) ->
@@ -181,6 +140,40 @@ module.exports = (server, kurentoClient) ->
         this.room.processIceCandidate(this, candidate)
     }
 
+    onAttach: ->
+      this.id = registry.add(this)
+
+    onDetach: ->
+      if this.room
+        this.disconnectRoom()
+      registry.remove(this.id)
+      this.id = null
+
+    sendCandidate: (candidate) ->
+      this.notify('ice-candidate', [candidate])
+
+    sendOffer: (offerSdp) ->
+      this.request('offer', [offerSdp])
+
+    sendContactList: ->
+      this.notify('room:contacts', [this.room.getContacts()])
+
+    connectRoom: (room) ->
+      this.listenTo(room, 'user:enter', => this.sendContactList())
+      this.listenTo(room, 'user:leave', => this.sendContactList())
+      unless this is room.creator
+        this.listenTo(room, 'destroy', => this.notify('room:destroy'))
+      this.room = room
+
+    disconnectRoom: ->
+      room = this.room
+      this.room = null
+      this.stopListening(room)
+      if this is room.creator
+        rooms.delete(room.name)
+        return room.destroy()
+      return room.removeUser(this)
+
     notifyPeer: (id, method, params) ->
       peer = registry.getPeer(id)
       unless peer
@@ -192,14 +185,6 @@ module.exports = (server, kurentoClient) ->
       unless peer
         return Promise.reject(ChatError.PEER_NOT_FOUND)
       peer.request(method, params)
-
-    _leaveRoom: ->
-      room = this.room
-      this.room = null
-      if this is room.creator
-        rooms.delete(room.name)
-        return room.close()
-      return room.removeUser(this)
 
 
   server.on 'connection', (ws) ->
