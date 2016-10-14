@@ -19,10 +19,8 @@ class BaseRoom extends EventEmitter
   }
 
   getContacts: ->
-    Array.from(this.members).map (user) -> {
-      id: user.id
-      name: 'John Doe'
-    }
+    Array.from(this.members).map (user) ->
+      user.getContactInfo()
 
   create: (user) ->
     throw new Error('abstract base method')

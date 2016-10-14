@@ -47,6 +47,12 @@ module.exports = (server, kurentoClient) ->
     id: null
     isAuthenticated: false
     room: null
+    alias: null
+
+    getContactInfo: -> {
+      id: this.id
+      name: this.alias || 'John Doe'
+    }
 
     # used for peer to peer connection (without using media server),
     # used for both not registered and not paid users
@@ -134,10 +140,24 @@ module.exports = (server, kurentoClient) ->
     }
 
     rpcNotify: {
+      'user/alias': (name) ->
+        this.alias = "#{name}"
+        if this.room
+          this.room.members.forEach (user) ->
+            user.sendContactList()
+        return
+
+      'room/text': (text) ->
+        if this.room
+          contact = this.getContactInfo()
+          this.room.members.forEach (user) ->
+            user.notify('room/text', [text, contact])
+        return
+
       'room/ice-candidate': (candidate) ->
-        unless this.room
-          return
-        this.room.processIceCandidate(this, candidate)
+        if this.room
+          this.room.processIceCandidate(this, candidate)
+        return
     }
 
     onAttach: ->
@@ -156,13 +176,13 @@ module.exports = (server, kurentoClient) ->
       this.request('offer', [offerSdp])
 
     sendContactList: ->
-      this.notify('room:contacts', [this.room.getContacts()])
+      this.notify('room/contacts', [this.room.getContacts()])
 
     connectRoom: (room) ->
       this.listenTo(room, 'user:enter', => this.sendContactList())
       this.listenTo(room, 'user:leave', => this.sendContactList())
       unless this is room.creator
-        this.listenTo(room, 'destroy', => this.notify('room:destroy'))
+        this.listenTo(room, 'destroy', => this.notify('room/destroy'))
       this.room = room
 
     disconnectRoom: ->
