@@ -128,7 +128,7 @@ def deploy():
         run('git checkout .')
         run('git pull')
         run('rm -f scripts/setup_env && ln -rs ./%s scripts/setup_env' % env.config_script)
-        run('source ~/.nvm/nvm.sh && npm update')
+        run('source ~/.nvm/nvm.sh && npm install')
 
     sudo('supervisorctl restart altexo-signal')
     sudo('service nginx restart')
@@ -145,7 +145,7 @@ def deploy_rsync(restart=False, update=False):
     with cd('/srv/altexo/signal'):
         run('rm -f scripts/setup_env && ln -rs ./%s scripts/setup_env' % env.config_script)
         if ('%s' % update).lower() in ('true', 'yes'):
-            run('source ~/.nvm/nvm.sh && npm update')
+            run('source ~/.nvm/nvm.sh && npm install')
 
     if ('%s' % restart).lower() in ('true', 'yes'):
         sudo('supervisorctl restart altexo-signal')
