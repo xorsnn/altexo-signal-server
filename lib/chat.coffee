@@ -4,6 +4,7 @@ nconf = require 'nconf'
 Registry = require './registry.coffee'
 JsonRpc = require './utils/json-rpc.coffee'
 ListenerMixin = require './utils/listener.coffee'
+logger = require './logger'
 
 
 module.exports = (server, kurentoClient) ->
@@ -97,6 +98,7 @@ module.exports = (server, kurentoClient) ->
 
         room.create(this)
         .then => this.connectRoom(rooms.set(name, room).get(name))
+        .then => logger.info({ p2p, room: name, user: this.id }, 'room created')
         .then => this.room.getProfile()
         .then null, _rawError
 
@@ -109,6 +111,7 @@ module.exports = (server, kurentoClient) ->
 
         rooms.get(name).addUser(this)
         .then => this.connectRoom(rooms.get(name))
+        .then => logger.info({ room: name, user: this.id }, 'room entered')
         .then => this.room.getProfile()
         .then null, _rawError
 
@@ -162,6 +165,8 @@ module.exports = (server, kurentoClient) ->
 
     onAttach: ->
       this.id = registry.add(this)
+      this.remoteAddr = this._ws.upgradeReq.headers['x-real-ip'] || '=/='
+      this.userAgent = this._ws.upgradeReq.headers['user-agent'] || '=/='
 
     onDetach: ->
       if this.room
@@ -190,8 +195,11 @@ module.exports = (server, kurentoClient) ->
       this.room = null
       this.stopListening(room)
       if this is room.creator
+        logger.info({ room: room.name }, 'room closed')
         rooms.delete(room.name)
         return room.destroy()
+      else
+        logger.info({ room: room.name, user: this.id }, 'user quit room')
       return room.removeUser(this)
 
     notifyPeer: (id, method, params) ->
@@ -212,9 +220,13 @@ module.exports = (server, kurentoClient) ->
     handler = new ChatRpc()
     handler.attach(ws)
 
-    console.log '>> client connected', handler.id
+    logger.info({
+      id: handler.id
+      ip: handler.remoteAddr
+      ua: handler.userAgent
+    }, 'client connected')
 
     ws.on 'close', ->
-      console.log '>> client disconnected', handler.id
+      logger.info({ id: handler.id }, 'client disconnected')
 
       handler.detach()

@@ -7,4 +7,8 @@ nvm use default
 
 source scripts/setup_env
 
-exec node index.js --config="${ALTEXO_CHAT_CONFIG}"
+if [ "${ALTEXO_PRETTY_STDOUT}" = true ] ; then
+	exec node index.js --config="${ALTEXO_CHAT_CONFIG}" | ./node_modules/.bin/bunyan --output short
+else
+	exec node index.js --config="${ALTEXO_CHAT_CONFIG}"
+fi

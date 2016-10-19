@@ -11,6 +11,12 @@
   "kurento": {
     "url": "ws://localhost:8888/kurento"
   },
+  "logger": {
+    "streams": [
+      { "path": "/var/log/altexo/signal.log", "level": "info" },
+      { "stream": "stdout", "level": "trace" }
+    ]
+  },
   "setup": {
     "bypass_join_confirmation": "false",
     "client_id": "62427805",

@@ -120,6 +120,9 @@ def uninstall_nginx_conf():
 def deploy():
     require('stage', provided_by=(production, testing, virtual,))
 
+    sudo('mkdir -p /var/log/altexo')
+    sudo('chown altexo:altexo /var/log/altexo')
+
     with cd('/srv/altexo/signal'):
         run('git checkout dev')
         run('git checkout .')

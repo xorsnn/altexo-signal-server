@@ -3,7 +3,6 @@ raven = require 'raven'
 kurento = require 'kurento-client'
 ws = require 'ws'
 
-
 nconf.argv()
 nconf.file(config) if (config = nconf.get('config'))
 nconf.defaults {
@@ -14,6 +13,9 @@ nconf.defaults {
     me: 'http://unix:/tmp/altexo-accounts.sock:/users/auth/me/'
   sentry:
     url: false
+  logger:
+    name: 'altexo-signal'
+    streams: [{ level: 'trace', stream: process.stdout }]
   kurento:
     url: 'ws://127.0.0.1:8888/kurento'
     options:
@@ -24,13 +26,15 @@ nconf.defaults {
 }
 
 
+# NOTE: logger must not be required until nconf is set up
+logger = require './logger'
+
+
 sentryClient = null
 if nconf.get('sentry:url')
   sentryClient = new raven.Client(nconf.get('sentry:url'))
-  sentryClient.patchGlobal (isLogged, error) ->
-    console.log 'error:', error.message
-    console.log 'error: sentry report',
-      (if isLogged then 'is sent' else 'is not sent')
+  sentryClient.patchGlobal (reported, error) ->
+    logger.error({ reported }, error.message)
     process.exit(1)
 
 
@@ -53,8 +57,7 @@ kurento(nconf.get('kurento:url'), nconf.get('kurento:options'))
         sentryClient.captureException(error)
 
 .then ->
-  console.log 'server: started at',
-    "#{nconf.get 'host'}:#{nconf.get 'port'}"
+  logger.info({ port: nconf.get('port'), host: nconf.get('host') }, 'server started')
 
 .catch (error) ->
-  console.log 'error:', error.message
+  logger.error(error.message) 
