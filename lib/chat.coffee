@@ -49,15 +49,13 @@ module.exports = (server, kurentoClient) ->
     isAuthenticated: false
     room: null
     alias: null
+    mode: null
 
     getContactInfo: -> {
       id: this.id
       name: this.alias || 'John Doe'
+      mode: this.mode || { video: '2d', audio: true }
     }
-
-    # used for peer to peer connection (without using media server),
-    # used for both not registered and not paid users
-    adHoc: true
 
     rpc: {
       'id': -> this.id
@@ -147,6 +145,13 @@ module.exports = (server, kurentoClient) ->
         this.alias = "#{name}"
         if this.room
           this.room.members.forEach (user) ->
+            user.sendContactList()
+        return
+
+      'user/mode': (value) ->
+        this.mode = value
+        if this.room
+          this.room.members.forEach (user) =>
             user.sendContactList()
         return
 
