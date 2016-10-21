@@ -1,4 +1,4 @@
 #!/bin/bash
 
 export ALTEXO_CHAT_CONFIG=config/testing.json
-
+export ALTEXO_PRETTY_STDOUT=true

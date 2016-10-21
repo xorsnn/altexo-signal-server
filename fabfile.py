@@ -138,6 +138,9 @@ def deploy():
 def deploy_rsync(restart=False, update=False):
     require('stage', provided_by=(testing, virtual,))
 
+    sudo('mkdir -p /var/log/altexo')
+    sudo('chown altexo:altexo /var/log/altexo')
+
     rsync_project(local_dir='.', remote_dir='/srv/altexo/signal/',
         exclude=['.git/', 'node_modules/', '__pycache__/', '*.pyc'],
         default_opts='-pvthrz', delete=True)
