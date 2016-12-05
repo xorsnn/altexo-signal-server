@@ -58,5 +58,10 @@ class P2PRoom extends BaseRoom
   processOffer: (user, offerSdp) ->
     this.creator.sendOffer(offerSdp)
 
+  restartPeer: (sender) ->
+    if sender is this.creator
+      return this._peer.sendRestart()
+    return this.creator.sendRestart()
+
 
 module.exports = P2PRoom

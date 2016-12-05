@@ -40,5 +40,8 @@ class BaseRoom extends EventEmitter
   processOffer: (user, offerSdp) ->
     throw new Error('abstract base method')
 
+  restartPeer: (senderId) ->
+    throw new Error('abstract base method')
+
 
 module.exports = BaseRoom

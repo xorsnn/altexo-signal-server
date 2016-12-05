@@ -70,6 +70,10 @@ module.exports = (kurentoClient) ->
 
         return answerSdp
 
+    restartPeer: (sender) ->
+      console.log 'warn: restart peer requested in kurento room'
+      return Promise.reject(null)
+
     _getPresenterEndpoint: ->
       this._endpoints.get(this.creator.id)
 

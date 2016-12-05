@@ -138,6 +138,11 @@ module.exports = (server, kurentoClient) ->
 
         this.room.processOffer(this, offerSdp)
         .then null, _rawError
+
+      'peer/restart': ->
+        unless this.room
+          return Promise.reject(ChatRpc.NO_CURRENT_ROOM)
+        this.room.restartPeer(this)
     }
 
     rpcNotify: {
@@ -187,6 +192,9 @@ module.exports = (server, kurentoClient) ->
 
     sendContactList: ->
       this.notify('room/contacts', [this.room.getContacts()])
+
+    sendRestart: ->
+      this.request('restart').then -> true
 
     connectRoom: (room) ->
       this.listenTo(room, 'user:enter', => this.sendContactList())
