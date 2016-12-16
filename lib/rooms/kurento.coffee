@@ -7,7 +7,9 @@ module.exports = (kurentoClient) ->
   class KurentoRoom extends BaseRoom
 
     _pipeline: null
+    _composite: null
     _endpoints: null
+    _hubPorts: null
     _candidateQueues: null
 
     getProfile: ->
@@ -15,12 +17,15 @@ module.exports = (kurentoClient) ->
 
     create: (user) ->
       this._endpoints = new Map()
+      this._hubPorts = new Map()
       this._candidateQueues = new Map()
 
       this.creator = user
 
       kurentoClient.create('MediaPipeline')
       .then (pipeline) => this._pipeline = pipeline
+      .then => this._pipeline.create('Composite')
+      .then (composite) => this._composite = composite
       .then => this._addUser(user)
 
     destroy: ->
@@ -35,6 +40,7 @@ module.exports = (kurentoClient) ->
     _addUser: (user) ->
       this.members.add(user)
       this._createEndpoint(user)
+      .then => this._createHubPort(user)
 
     removeUser: (user) ->
       unless this.members.has(user)
@@ -44,6 +50,7 @@ module.exports = (kurentoClient) ->
 
     _removeUser: (user) ->
       this.members.delete(user)
+      this._releaseHubPort(user)
       this._releaseEndpoint(user)
 
     processIceCandidate: (user, candidate) ->
@@ -63,19 +70,13 @@ module.exports = (kurentoClient) ->
       unless webRtcEndpoint
         throw new Error('no endpoint found')
       webRtcEndpoint.processOffer(offerSdp)
-      .then (answerSdp) =>
-
-        this._getPresenterEndpoint().connect(webRtcEndpoint)
-        .then -> webRtcEndpoint.gatherCandidates()
-
+      .then (answerSdp) ->
+        webRtcEndpoint.gatherCandidates()
         return answerSdp
 
     restartPeer: (sender) ->
       console.log 'warn: restart peer requested in kurento room'
       return Promise.reject(null)
-
-    _getPresenterEndpoint: ->
-      this._endpoints.get(this.creator.id)
 
     _createEndpoint: (user) ->
       this._pipeline.create('WebRtcEndpoint')
@@ -94,8 +95,21 @@ module.exports = (kurentoClient) ->
 
         return
 
+    _createHubPort: (user) ->
+      webRtcEndpoint = this._endpoints.get(user.id)
+      this._composite.createHubPort()
+      .then (hubPort) =>
+        this._hubPorts.set(user.id, hubPort)
+        webRtcEndpoint.connect(hubPort).then ->
+          hubPort.connect(webRtcEndpoint)
+
     _releaseEndpoint: (user) ->
       webRtcEndpoint = this._endpoints.get(user.id)
       this._endpoints.delete(user.id)
       this._candidateQueues.delete(user.id)
       webRtcEndpoint.release()
+
+    _releaseHubPort: (user) ->
+      hubPort = this._hubPorts.get(user.id)
+      this._hubPorts.delete(user.id)
+      hubPort.release()
