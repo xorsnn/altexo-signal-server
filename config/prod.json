@@ -5,6 +5,11 @@
   "sentry": {
     "url": false
   },
+  "logger": {
+    "streams": [
+      { "path": "/var/log/altexo/signal.log", "level": "info" }
+    ]
+  },
   "setup": {
     "bypass_join_confirmation": "false",
     "client_id": "62427805",

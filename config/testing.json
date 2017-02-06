@@ -14,7 +14,7 @@
   "logger": {
     "streams": [
       { "path": "/var/log/altexo/signal.log", "level": "info" },
-      { "stream": "stdout", "level": "trace" }
+      { "stream": "pretty", "level": "trace" }
     ]
   },
   "setup": {

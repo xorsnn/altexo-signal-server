@@ -15,7 +15,7 @@ nconf.defaults {
     url: false
   logger:
     name: 'altexo-signal'
-    streams: [{ level: 'trace', stream: process.stdout }]
+    streams: [{ level: 'trace', stream: 'pretty' }]
   kurento:
     url: 'ws://127.0.0.1:8888/kurento'
     options:

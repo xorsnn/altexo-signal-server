@@ -5,6 +5,11 @@
   "sentry": {
     "url": false
   },
+  "logger": {
+    "streams": [
+      { "stream": "pretty", "level": "trace" }
+    ]
+  },
   "setup": {
     "bypass_join_confirmation": "false",
     "client_id": "62427805",
