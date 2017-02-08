@@ -9,10 +9,10 @@ require('coffee-script/register');
 });
 
 di.providePath({
-  ChatRpc: './chat.coffee',
-  KurentoService: './kurento.coffee',
   KurentoRoom: './rooms/kurento.coffee',
   P2pRoom: './rooms/p2p.coffee',
+  ChatRpc: './chat.coffee',
+  kurentoClient: './kurento.coffee',
 });
 
 di.resolve('sentry');
