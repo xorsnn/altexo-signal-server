@@ -49,7 +49,7 @@ module.exports = (kurentoClient) ->
     _removeUser: (user) ->
       this.members.delete(user)
       this._releaseHubPort(user)
-      this._releaseEndpoint(user)
+      .then => this._releaseEndpoint(user)
 
     processIceCandidate: (user, candidate) ->
       candidate = (kurento.getComplexType 'IceCandidate')(candidate)
@@ -73,8 +73,11 @@ module.exports = (kurentoClient) ->
         return answerSdp
 
     restartPeer: (sender) ->
-      console.log 'warn: restart peer requested in kurento room'
-      return Promise.reject(null)
+      this._releaseHubPort(sender)
+      .then => this._releaseEndpoint(sender)
+      .then => this._createEndpoint(sender)
+      .then => this._createHubPort(sender)
+      .then -> true
 
     _createEndpoint: (user) ->
       this._pipeline.create('WebRtcEndpoint')
