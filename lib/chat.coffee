@@ -4,7 +4,7 @@ JsonRpc = require './utils/json-rpc.coffee'
 ListenerMixin = require './utils/listener.coffee'
 Registry = require './registry.coffee'
 
-module.exports = (config, KurentoRoom, P2pRoom) ->
+module.exports = (config, logger, KurentoRoom, P2pRoom) ->
   class ChatRpc extends JsonRpc
 
     Object.assign( @::, ListenerMixin )
