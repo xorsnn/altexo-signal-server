@@ -1,9 +1,7 @@
 kurento = require 'kurento-client'
 BaseRoom = require './base.coffee'
 
-
-module.exports = (kurentoClient) ->
-
+module.exports = (KurentoService) ->
   class KurentoRoom extends BaseRoom
 
     _pipeline: null
@@ -19,7 +17,8 @@ module.exports = (kurentoClient) ->
 
       this.creator = user
 
-      kurentoClient.create('MediaPipeline')
+      KurentoService.connect().then (client) ->
+        client.create('MediaPipeline')
       .then (pipeline) => this._pipeline = pipeline
       .then => this._addUser(user)
 

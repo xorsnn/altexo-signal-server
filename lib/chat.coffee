@@ -1,18 +1,10 @@
 request = require 'request'
-nconf = require 'nconf'
 
-Registry = require './registry.coffee'
 JsonRpc = require './utils/json-rpc.coffee'
 ListenerMixin = require './utils/listener.coffee'
-logger = require './logger'
+Registry = require './registry.coffee'
 
-
-module.exports = (server, kurentoClient) ->
-
-  KurentoRoom = (require './rooms/kurento.coffee')(kurentoClient)
-  P2PRoom = require './rooms/p2p.coffee'
-
-
+module.exports = (config, KurentoRoom, P2pRoom) ->
   class ChatRpc extends JsonRpc
 
     Object.assign( @::, ListenerMixin )
@@ -63,7 +55,7 @@ module.exports = (server, kurentoClient) ->
       'authenticate': (token) ->
         auth = new Promise (resolve, reject) ->
           authRequest = {
-            url: nconf.get('auth:me')
+            url: config.get('auth:me')
             headers: {
               'Authorization': "Token #{token}"
               # NOTE: needed to turn off debug mode in django
@@ -92,7 +84,7 @@ module.exports = (server, kurentoClient) ->
         unless p2p
           room = new KurentoRoom(name)
         else
-          room = new P2PRoom(name)
+          room = new P2pRoom(name)
 
         room.create(this)
         .then => this.connectRoom(rooms.set(name, room).get(name))
@@ -226,20 +218,3 @@ module.exports = (server, kurentoClient) ->
       unless peer
         return Promise.reject(ChatError.PEER_NOT_FOUND)
       peer.request(method, params)
-
-
-  server.on 'connection', (ws) ->
-
-    handler = new ChatRpc()
-    handler.attach(ws)
-
-    logger.info({
-      id: handler.id
-      ip: handler.remoteAddr
-      ua: handler.userAgent
-    }, 'client connected')
-
-    ws.on 'close', ->
-      logger.info({ id: handler.id }, 'client disconnected')
-
-      handler.detach()
