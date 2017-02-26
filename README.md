@@ -29,3 +29,9 @@
 ### Уведомления ###
 
 * `ice-candidate [ candidate ]` передача обрнаруженного ICE candidate.
+
+### Запуск ###
+$ docker-compose build
+$ docker-compose up
+
+сервер доступен по 127.0.0.1:8080
