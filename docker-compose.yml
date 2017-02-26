@@ -1,0 +1,10 @@
+altexo_signal_node:
+  build: .
+  command: npm start
+  container_name: altexo-signal-node
+  environment:
+    - VIRTUAL_PORT=8080
+  volumes:
+    - .:/code
+  ports:
+    - "8080:8080"

@@ -5,7 +5,7 @@ nconf.file(config) if (config = nconf.get('config'))
 
 module.exports = ->
   nconf.defaults {
-    host: 'localhost'
+    host: '0.0.0.0'
     port: 8080
     path: '/al_chat'
     auth:
