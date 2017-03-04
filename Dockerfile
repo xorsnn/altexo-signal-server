@@ -4,5 +4,5 @@ WORKDIR /code
 ADD package.json /code/
 RUN npm install
 ADD . /code/
-ENV PORT 8080
-EXPOSE 8080
+ENV PORT 80
+EXPOSE 80

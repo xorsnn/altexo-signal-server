@@ -19,6 +19,10 @@ STAGES = {
         'hosts': ['altexo@dev.lugati.ru'],
         'config_script': 'scripts/config/setup_env_testing'
     },
+    'testing_docker': {
+        'hosts': ['altexo@signal-dev.altexo.com'],
+        'config_script': 'scripts/config/setup_env_testing' #TODO: remove I think
+    },
     'virtual': {
         'hosts': ['altexo@localhost:2222'],
         'config_script': 'scripts/config/setup_env_development'
@@ -37,6 +41,10 @@ def production():
 @task
 def testing():
     stage_set('testing')
+
+@task
+def testing_docker():
+    stage_set('testing_docker')
 
 @task
 def virtual():
@@ -153,3 +161,22 @@ def deploy_rsync(restart=False, update=False):
     if ('%s' % restart).lower() in ('true', 'yes'):
         sudo('supervisorctl restart altexo-signal')
         sudo('service nginx restart')
+
+#TODO: leave only docker
+@task
+def install_docker():
+    require('stage', provided_by=(testing))
+    sudo('mkdir -p /srv/www/altexo/')
+    sudo('rm -rf /srv/www/altexo/altexo-signal-node')
+    sudo('chown -R altexo:altexo /srv/www/altexo') # ???
+    with cd('/srv/www/altexo'):
+        run('git clone git@bitbucket.org:altexo/altexo-signal-node.git')
+
+@task
+def deploy_docker(branch='dev'):
+    require('stage', provided_by=(production, testing,))
+    with cd('/srv/www/altexo/altexo-signal-node'):
+        run('git pull')
+        run('git checkout ' + branch)
+        run('git pull')
+        run('./scripts/deploy/deploy.sh testing')

@@ -6,7 +6,7 @@ nconf.file(config) if (config = nconf.get('config'))
 module.exports = ->
   nconf.defaults {
     host: '0.0.0.0'
-    port: 8080
+    port: 80
     path: '/al_chat'
     auth:
       me: 'http://unix:/tmp/altexo-accounts.sock:/users/auth/me/'
