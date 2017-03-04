@@ -8,5 +8,5 @@
 #
 # source scripts/setup_env
 # exec node index.js --config="${ALTEXO_CHAT_CONFIG}"
-
+npm install
 exec node index.js
