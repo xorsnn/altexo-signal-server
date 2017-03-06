@@ -6,11 +6,11 @@ module.exports = (ChatRpc, config, logger, sentry) -> {
       host: config.get('host')
       port: config.get('port')
       path: config.get('path')
-      ssl_key: '/etc/ssl/altexo.com/altexo.com.key',
-      ssl_cert: '/etc/ssl/altexo.com/altexo.com.crt'
+      # ssl_key: '/etc/ssl/altexo.com/altexo.com.key',
+      # ssl_cert: '/etc/ssl/altexo.com/altexo.com.crt'
     }
     server = ws.Server serverOptions, ->
-      url = "wss://#{config.get 'host'}:#{config.get 'port'}#{config.get 'path'}"
+      url = "ws://#{config.get 'host'}:#{config.get 'port'}#{config.get 'path'}"
       logger.info("server started at #{url}")
 
     if sentry
