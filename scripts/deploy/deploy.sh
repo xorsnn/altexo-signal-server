@@ -20,6 +20,12 @@ docker_compose() {
     cp ./scripts/deploy/docker-compose/docker-compose-testing.yml docker-compose.yml
     docker-compose build
     docker-compose up -d
+  elif [[ "${TARGET}" == "local" ]]
+  then
+    cd ${SCRIPT_DIR}/../../
+    cp ./scripts/deploy/docker-compose/docker-compose-local.yml docker-compose.yml
+    docker-compose build
+    docker-compose up -d
   fi
 }
 
