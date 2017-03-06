@@ -17,12 +17,14 @@ docker_compose() {
   if [[ "${TARGET}" == "testing" ]]
   then
     cd ${SCRIPT_DIR}/../../
+    mkdir -p log
     cp ./scripts/deploy/docker-compose/docker-compose-testing.yml docker-compose.yml
     docker-compose build
     docker-compose up -d
   elif [[ "${TARGET}" == "local" ]]
   then
     cd ${SCRIPT_DIR}/../../
+    mkdir -p log
     cp ./scripts/deploy/docker-compose/docker-compose-local.yml docker-compose.yml
     docker-compose build
     docker-compose up -d
