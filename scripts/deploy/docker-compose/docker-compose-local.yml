@@ -1,0 +1,9 @@
+altexo_signal_node:
+  build: .
+  command: ./scripts/run
+  container_name: altexo-signal-node
+  environment:
+    - VIRTUAL_PORT=${VIRTUAL_PORT}
+    - VIRTUAL_HOST=${VIRTUAL_HOST}
+  volumes:
+    - .:/code
