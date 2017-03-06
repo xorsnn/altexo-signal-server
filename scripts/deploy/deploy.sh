@@ -4,6 +4,7 @@ cd "${0%/*}"
 
 SCRIPT_DIR=`pwd`
 CONFIG_FILE="${SCRIPT_DIR}/conf/$1.cfg"
+TARGET=$1
 
 echo "=========== USING_CONFIG ======================"
 echo ${CONFIG_FILE}
@@ -13,9 +14,12 @@ log()  { echo "-----> $1" > /dev/stderr; }
 warn() { echo "       $1" > /dev/stderr; }
 
 docker_compose() {
-  cd ${SCRIPT_DIR}/../../
-  docker-compose build
-  docker-compose up -d
+  if [[ "${TARGET}" == "testing" ]]
+  then
+    cd ${SCRIPT_DIR}/../../
+    docker-compose -f ./scripts/deploy/docker-compose/docker-compose-testing.yml build
+    docker-compose -f ./scripts/deploy/docker-compose/docker-compose-testing.yml up -d
+  fi
 }
 
 parse_env() {

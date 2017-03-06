@@ -34,10 +34,12 @@ def stage_set(stage_name):
     for option, value in STAGES[env.stage].items():
         setattr(env, option, value)
 
+# TODO: old deployment, remove
 @task
 def production():
     stage_set('production')
 
+# TODO: old deployment, remove
 @task
 def testing():
     stage_set('testing')
@@ -50,6 +52,7 @@ def testing_docker():
 def virtual():
     stage_set('virtual')
 
+# TODO: old deployment, remove
 @task
 def install():
     require('stage', provided_by=(production, testing, virtual,))
@@ -61,6 +64,7 @@ def install():
     if not exists('/srv/altexo/_nginx_conf/signal.conf'):
         install_nginx_conf()
 
+# TODO: old deployment, remove
 @task
 def uninstall():
     require('stage', provided_by=(production, testing, virtual,))
@@ -69,6 +73,7 @@ def uninstall():
     uninstall_supervisor_conf()
     uninstall_project()
 
+# TODO: old deployment, remove
 @task
 def install_project():
     require('stage', provided_by=(production, testing, virtual,))
@@ -84,12 +89,14 @@ def install_project():
     with cd('/srv/altexo/signal'):
         run('source ~/.nvm/nvm.sh && npm install')
 
+# TODO: old deployment, remove
 @task
 def uninstall_project():
     require('stage', provided_by=(production, testing, virtual,))
 
     run('rm -rf /srv/altexo/signal')
 
+# TODO: old deployment, remove
 @task
 def install_supervisor_conf():
     require('stage', provided_by=(production, testing, virtual,))
@@ -99,6 +106,7 @@ def install_supervisor_conf():
         sudo('supervisorctl reread')
         sudo('supervisorctl update')
 
+# TODO: old deployment, remove
 @task
 def uninstall_supervisor_conf():
     require('stage', provided_by=(production, testing, virtual,))
@@ -107,6 +115,7 @@ def uninstall_supervisor_conf():
     sudo('supervisorctl reread')
     sudo('supervisorctl update')
 
+# TODO: old deployment, remove
 @task
 def install_nginx_conf():
     require('stage', provided_by=(production, testing, virtual,))
@@ -116,6 +125,7 @@ def install_nginx_conf():
        sudo('cp scripts/config/nginx-locations.conf /srv/altexo/_nginx_conf/signal.conf')
     sudo('service nginx restart')
 
+# TODO: old deployment, remove
 @task
 def uninstall_nginx_conf():
     require('stage', provided_by=(production, testing, virtual,))
@@ -123,7 +133,7 @@ def uninstall_nginx_conf():
     sudo('rm -f /srv/altexo/_nginx_conf/signal.conf')
     sudo('service nginx restart')
 
-
+# TODO: old deployment, remove
 @task
 def deploy():
     require('stage', provided_by=(production, testing, virtual,))
@@ -162,13 +172,12 @@ def deploy_rsync(restart=False, update=False):
         sudo('supervisorctl restart altexo-signal')
         sudo('service nginx restart')
 
-#TODO: leave only docker
+# NOTE: docker deployment, the NEW WAY!
 @task
 def install_docker():
     require('stage', provided_by=(testing))
     sudo('mkdir -p /srv/www/altexo/')
     sudo('rm -rf /srv/www/altexo/altexo-signal-node')
-    sudo('chown -R altexo:altexo /srv/www/altexo') # ???
     with cd('/srv/www/altexo'):
         run('git clone git@bitbucket.org:altexo/altexo-signal-node.git')
 
