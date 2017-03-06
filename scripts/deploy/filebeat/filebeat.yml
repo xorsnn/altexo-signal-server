@@ -1,0 +1,26 @@
+
+filebeat.prospectors:
+- paths:
+  - /log/*.log
+  ecnoding: utf-8
+  fields:
+    "@type": altexo-signal
+#-------------------------- Elasticsearch output ------------------------------
+output.elasticsearch:
+  hosts: ["https://humio.altexo.com:443/api/v1/dataspaces/altexo-signal-dev/ingest/elasticsearch"]
+  username: w3w5oKLTnzdGLcRLbOwW52NDUd0gRPOd
+    # compression_level: 5
+    # bulk_max_size: 200
+    # #password: "changeme"
+
+
+#================================ Logging =====================================
+
+# Sets log level. The default log level is info.
+# Available log levels are: critical, error, warning, info, debug
+#logging.level: debug
+
+# At debug level, you can selectively enable logging only for some components.
+# To enable all selectors use ["*"]. Examples of other selectors are "beat",
+# "publish", "service".
+#logging.selectors: ["*"]
