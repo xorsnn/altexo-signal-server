@@ -17,8 +17,9 @@ docker_compose() {
   if [[ "${TARGET}" == "testing" ]]
   then
     cd ${SCRIPT_DIR}/../../
-    docker-compose -f ./scripts/deploy/docker-compose/docker-compose-testing.yml build
-    docker-compose -f ./scripts/deploy/docker-compose/docker-compose-testing.yml up -d
+    cp ./scripts/deploy/docker-compose/docker-compose-testing.yml docker-compose.yml
+    docker-compose build
+    docker-compose up -d
   fi
 }
 
