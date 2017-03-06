@@ -8,5 +8,6 @@
 #
 # source scripts/setup_env
 # exec node index.js --config="${ALTEXO_CHAT_CONFIG}"
+mkdir -p log
 npm install
-exec node index.js
+exec node index.js --config="$1"
