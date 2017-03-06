@@ -7,3 +7,5 @@ altexo_signal_node:
     - VIRTUAL_HOST=${VIRTUAL_HOST}
   volumes:
     - .:/code
+    - /etc/ssl/altexo.com/altexo.com.crt:/etc/ssl/altexo.com/altexo.com.crt:ro
+    - /etc/ssl/altexo.com/altexo.com.key:/etc/ssl/altexo.com/altexo.com.key:ro
