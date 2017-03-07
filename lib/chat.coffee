@@ -59,7 +59,7 @@ module.exports = (config, logger, KurentoRoom, P2pRoom) ->
             headers: {
               'Authorization': "Token #{token}"
               # NOTE: needed to turn off debug mode in django
-              'Host': 'localhost'
+              # 'Host': 'localhost'
             }
           }
           request authRequest, (error, response, body) ->

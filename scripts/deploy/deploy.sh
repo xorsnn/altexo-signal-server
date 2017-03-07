@@ -25,7 +25,12 @@ docker_compose() {
   then
     cd ${SCRIPT_DIR}/../../
     mkdir -p log
+    
     cp ./scripts/deploy/docker-compose/docker-compose-local.yml docker-compose.yml
+
+    docker-compose stop
+    docker-compose rm -f
+
     docker-compose build
     docker-compose up -d
   fi

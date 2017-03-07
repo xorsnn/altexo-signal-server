@@ -185,7 +185,8 @@ def install_docker():
 def deploy_docker(branch='dev'):
     require('stage', provided_by=(production, testing,))
     with cd('/srv/www/altexo/altexo-signal-node'):
-        run('git pull')
+        if (branch != 'dev'):
+            run('git pull')
         run('git checkout ' + branch)
         run('git pull')
         run('./scripts/deploy/deploy.sh testing')
