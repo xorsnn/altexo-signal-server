@@ -2,18 +2,12 @@ ws = require 'ws'
 
 module.exports = (ChatRpc, config, logger, sentry) -> {
   start: ->
-    serverOptions = {
-      host: config.get('host')
-      port: config.get('port')
-      path: config.get('path')
-    }
-    server = ws.Server serverOptions, ->
-      url = "ws://#{config.get 'host'}:#{config.get 'port'}#{config.get 'path'}"
-      logger.info("server started at #{url}")
+    {host, port, path} = config.get()
 
-    if sentry
-      server.on 'error', (error) ->
-        sentry.captureException(error)
+    server = ws.Server {host, port, path}, ->
+      logger.info """
+        server started at ws://#{options.host}:#{options.port}#{options.path}
+      """
 
     server.on 'connection', (ws) ->
       handler = new ChatRpc()
@@ -21,11 +15,30 @@ module.exports = (ChatRpc, config, logger, sentry) -> {
       ws.on 'close', ->
         logger.info({ id: handler.id }, 'client disconnected')
         handler.detach()
+
+      ws.on 'ping', (arg, arg2) ->
+        logger.debug '>> PING RECEIVED', arg, arg2
+      ws.on 'pong', (arg, arg2) ->
+        logger.debug '>> PONG RECEIVED', arg, arg2
+
+      timeoutID = null
+      _sendPing = ->
+        timeoutID = null
+        logger.debug '>> SEND PING', '***'
+        ws.ping()
+      timeoutID = setTimeout(_sendPing, 42*1000)
+      ws.on 'close', ->
+        clearTimeout(timeoutID) unless timeoutID == null
+
       logger.info({
         id: handler.id
         ip: handler.remoteAddr
         ua: handler.userAgent
       }, 'client connected')
+
+    if sentry
+      server.on 'error', (error) ->
+        sentry.captureException(error)
 
     return server
 }
