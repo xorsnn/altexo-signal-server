@@ -6,8 +6,8 @@ module.exports = (ChatRpc, config, logger, sentry) -> {
 
     server = ws.Server {host, port, path}, ->
       logger.info """
-        server started at ws://#{options.host}:#{options.port}#{options.path}
-      """
+                    server started at ws://#{host}:#{port}#{path}
+                  """
 
     server.on 'connection', (ws) ->
       handler = new ChatRpc()
