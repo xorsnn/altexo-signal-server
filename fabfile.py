@@ -13,15 +13,18 @@ from fabric.contrib.project import rsync_project
 STAGES = {
     'production': {
         'hosts': ['altexo@altexo.com'],
-        'config_script': 'scripts/config/setup_env_production'
+        'config_script': 'scripts/config/setup_env_production',
+        'target': 'prod'
     },
     'testing': {
         'hosts': ['altexo@dev.lugati.ru'],
-        'config_script': 'scripts/config/setup_env_testing'
+        'config_script': 'scripts/config/setup_env_testing',
+        'target': 'testing'
     },
     'testing_docker': {
         'hosts': ['altexo@signal-dev.altexo.com'],
-        'config_script': 'scripts/config/setup_env_testing' #TODO: remove I think
+        'config_script': 'scripts/config/setup_env_testing', #TODO: remove I think
+        'target': 'testing'
     },
     'virtual': {
         'hosts': ['altexo@localhost:2222'],
@@ -175,7 +178,7 @@ def deploy_rsync(restart=False, update=False):
 # NOTE: docker deployment, the NEW WAY!
 @task
 def install_docker():
-    require('stage', provided_by=(testing))
+    require('stage', provided_by=(testing, production))
     sudo('mkdir -p /srv/www/altexo/')
     sudo('rm -rf /srv/www/altexo/altexo-signal-node')
     with cd('/srv/www/altexo'):
@@ -189,4 +192,4 @@ def deploy_docker(branch='dev'):
             run('git pull')
         run('git checkout ' + branch)
         run('git pull')
-        run('./scripts/deploy/deploy.sh testing')
+        run('./scripts/deploy/deploy.sh %s' % env.target)
