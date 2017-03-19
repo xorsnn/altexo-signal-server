@@ -39,6 +39,20 @@ docker_compose() {
 
     docker-compose build
     docker-compose up -d
+  elif [[ "${TARGET}" == "prod" ]]
+  then
+    cd ${SCRIPT_DIR}/../../
+    mkdir -p log
+
+    mkdir -p ${LOCAL_NGINX_FOLDER}
+    sudo cp ${SCRIPT_DIR}/nginx/local.nginx.conf ${LOCAL_NGINX_FOLDER}/vhost.d/${VIRTUAL_HOST}
+    cp ./scripts/deploy/docker-compose/docker-compose-local.yml docker-compose.yml
+
+    docker-compose stop
+    docker-compose rm -f
+
+    docker-compose build
+    docker-compose up -d
   fi
 }
 
