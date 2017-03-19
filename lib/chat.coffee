@@ -82,7 +82,8 @@ module.exports = (config, logger, KurentoRoom, P2pRoom) ->
 
         # TODO: make this decision based on payment
         unless p2p
-          room = new KurentoRoom(name)
+          # room = new KurentoRoom(name)
+          return Promise.reject(ChatError.NOT_AUTHENTICATED)
         else
           room = new P2pRoom(name)
 
