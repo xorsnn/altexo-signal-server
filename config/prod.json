@@ -7,7 +7,8 @@
   },
   "logger": {
     "streams": [
-      { "path": "/var/log/altexo/signal.log", "level": "info" }
+      { "path": "./log/signal.log", "level": "info" },
+      { "stream": "pretty", "level": "trace" }
     ]
   },
   "setup": {

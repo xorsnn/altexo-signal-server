@@ -7,6 +7,7 @@
   },
   "logger": {
     "streams": [
+      { "path": "./log/signal.log", "level": "info" },
       { "stream": "pretty", "level": "trace" }
     ]
   },
