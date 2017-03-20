@@ -1,16 +1,15 @@
 altexo_filebeat:
   image: prima/filebeat:5.2.1
-  container_name: altexo-signal-filebeat
+  container_name: signal.altexo.com_filebeat
   volumes:
     - ./scripts/deploy/filebeat/filebeat.yml:/filebeat.yml
     - ./scripts/deploy/filebeat/filebeat.template.json:/filebeat.template.json
     - ./scripts/deploy/filebeat/filebeat.template-es2x.json:/filebeat.template-es2x.json
     - ./log:/log
-
 altexo_signal_node:
   build: .
   command: ./scripts/run ${CONFIG_FILE}
-  container_name: altexo-signal-node
+  container_name: signal.altexo.com
   environment:
     - VIRTUAL_PORT=${VIRTUAL_PORT}
     - VIRTUAL_HOST=${VIRTUAL_HOST}
