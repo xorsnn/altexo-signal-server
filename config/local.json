@@ -1,9 +1,15 @@
 {
+  "host": "0.0.0.0",
+  "port": 80,
+  "path": "/al_chat",
   "auth": {
-    "me": "http://unix:/tmp/altexo-accounts.sock:/users/auth/me/"
+    "me": "https://dev-accounts.altexo.com/api/is_logged/"
   },
   "sentry": {
-    "url": false
+    "url": "https://cdaedca4cea24fd19d2a9e66d0ef7b18:346c4bb4e8c24f0883e10df1f6a86aa0@sentry.altexo.com/4"
+  },
+  "kurento": {
+    "url": "ws://localhost:8888/kurento"
   },
   "logger": {
     "streams": [

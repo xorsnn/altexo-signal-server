@@ -12,10 +12,20 @@ class BaseRoom extends EventEmitter
     this.members = new Set()
     super()
 
-  open: (user) ->
+  getProfile: -> {
+    creator: this.creator.id
+    name: this.name
+    contacts: this.getContacts()
+  }
+
+  getContacts: ->
+    Array.from(this.members).map (user) ->
+      user.getContactInfo()
+
+  create: (user) ->
     throw new Error('abstract base method')
 
-  close: ->
+  destroy: ->
     throw new Error('abstract base method')
 
   addUser: (user) ->
@@ -28,6 +38,9 @@ class BaseRoom extends EventEmitter
     throw new Error('abstract base method')
 
   processOffer: (user, offerSdp) ->
+    throw new Error('abstract base method')
+
+  restartPeer: (senderId) ->
     throw new Error('abstract base method')
 
 

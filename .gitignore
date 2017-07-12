@@ -1,2 +1,5 @@
 node_modules/
 *.pyc
+scripts/setup_env
+.env
+log/

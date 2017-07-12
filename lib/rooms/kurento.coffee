@@ -1,57 +1,55 @@
 kurento = require 'kurento-client'
 BaseRoom = require './base.coffee'
 
-
 module.exports = (kurentoClient) ->
-
   class KurentoRoom extends BaseRoom
 
     _pipeline: null
+    _composite: null
     _endpoints: null
+    _hubPorts: null
     _candidateQueues: null
 
-    open: (user) ->
-      console.log '>> open room', this.name
+    getProfile: ->
+      Object.assign({ p2p: false }, super())
 
+    create: (user) ->
       this._endpoints = new Map()
+      this._hubPorts = new Map()
       this._candidateQueues = new Map()
 
       this.creator = user
 
       kurentoClient.create('MediaPipeline')
       .then (pipeline) => this._pipeline = pipeline
+      .then => this._pipeline.create('Composite')
+      .then (composite) => this._composite = composite
       .then => this._addUser(user)
 
-    close: ->
-      console.log '>> close room', this.name
-
+    destroy: ->
       Promise.all(Array.from(this.members, (user) => this._removeUser(user)))
       .then => this._pipeline.release()
-      .then => this.emit('close')
+      .then => this.emit('destroy')
 
     addUser: (user) ->
       this._addUser(user).then =>
         this.emit('user:enter', user)
-        return true
 
     _addUser: (user) ->
-      console.log '>> add user', user.id
-
       this.members.add(user)
       this._createEndpoint(user)
+      .then => this._createHubPort(user)
 
     removeUser: (user) ->
       unless this.members.has(user)
         throw new Error('cannot remove not existing user')
       this._removeUser(user).then =>
         this.emit('user:leave', user)
-        return true
 
     _removeUser: (user) ->
-      console.log '>> remove user', user.id
-
       this.members.delete(user)
-      this._releaseEndpoint(user)
+      this._releaseHubPort(user)
+      .then => this._releaseEndpoint(user)
 
     processIceCandidate: (user, candidate) ->
       candidate = (kurento.getComplexType 'IceCandidate')(candidate)
@@ -70,15 +68,16 @@ module.exports = (kurentoClient) ->
       unless webRtcEndpoint
         throw new Error('no endpoint found')
       webRtcEndpoint.processOffer(offerSdp)
-      .then (answerSdp) =>
-
-        this._getPresenterEndpoint().connect(webRtcEndpoint)
-        .then -> webRtcEndpoint.gatherCandidates()
-
+      .then (answerSdp) ->
+        webRtcEndpoint.gatherCandidates()
         return answerSdp
 
-    _getPresenterEndpoint: ->
-      this._endpoints.get(this.creator.id)
+    restartPeer: (sender) ->
+      this._releaseHubPort(sender)
+      .then => this._releaseEndpoint(sender)
+      .then => this._createEndpoint(sender)
+      .then => this._createHubPort(sender)
+      .then -> true
 
     _createEndpoint: (user) ->
       this._pipeline.create('WebRtcEndpoint')
@@ -97,8 +96,21 @@ module.exports = (kurentoClient) ->
 
         return
 
+    _createHubPort: (user) ->
+      webRtcEndpoint = this._endpoints.get(user.id)
+      this._composite.createHubPort()
+      .then (hubPort) =>
+        this._hubPorts.set(user.id, hubPort)
+        webRtcEndpoint.connect(hubPort).then ->
+          hubPort.connect(webRtcEndpoint)
+
     _releaseEndpoint: (user) ->
       webRtcEndpoint = this._endpoints.get(user.id)
       this._endpoints.delete(user.id)
       this._candidateQueues.delete(user.id)
       webRtcEndpoint.release()
+
+    _releaseHubPort: (user) ->
+      hubPort = this._hubPorts.get(user.id)
+      this._hubPorts.delete(user.id)
+      hubPort.release()

@@ -1,60 +1,44 @@
-nconf = require 'nconf'
-raven = require 'raven'
-kurento = require 'kurento-client'
 ws = require 'ws'
 
+module.exports = (ChatRpc, config, logger, sentry) -> {
+  start: ->
+    {host, port, path} = config.get()
 
-nconf.argv()
-nconf.file(config) if (config = nconf.get('config'))
-nconf.defaults {
-  host: 'localhost'
-  port: 8888
-  path: '/chat'
-  auth:
-    me: 'http://unix:/tmp/altexo-accounts.sock:/users/auth/me/'
-  sentry:
-    url: false
-  kurento:
-    url: 'ws://localhost:8080/kurento'
-    options:
-      # access_token: 'weanOshEtph7'
-      failAfter: 1
-      strict: true
-  setup: {}
+    server = ws.Server {host, port, path}, ->
+      logger.info """
+                    server started at ws://#{host}:#{port}#{path}
+                  """
+
+    server.on 'connection', (ws) ->
+      handler = new ChatRpc()
+      handler.attach(ws)
+      ws.on 'close', ->
+        logger.info({ id: handler.id }, 'client disconnected')
+        handler.detach()
+
+      ws.on 'ping', (arg, arg2) ->
+        logger.debug '>> PING RECEIVED', arg, arg2
+      ws.on 'pong', (arg, arg2) ->
+        logger.debug '>> PONG RECEIVED', arg, arg2
+
+      timeoutID = null
+      _sendPing = ->
+        timeoutID = null
+        logger.debug '>> SEND PING', '***'
+        ws.ping()
+      timeoutID = setTimeout(_sendPing, 42*1000)
+      ws.on 'close', ->
+        clearTimeout(timeoutID) unless timeoutID == null
+
+      logger.info({
+        id: handler.id
+        ip: handler.remoteAddr
+        ua: handler.userAgent
+      }, 'client connected')
+
+    if sentry
+      server.on 'error', (error) ->
+        sentry.captureException(error)
+
+    return server
 }
-
-
-sentryClient = null
-if nconf.get('sentry:url')
-  sentryClient = new raven.Client(nconf.get('sentry:url'))
-  sentryClient.patchGlobal (isLogged, error) ->
-    console.log 'error:', error.message
-    console.log 'error: sentry report',
-      (if isLogged then 'is sent' else 'is not sent')
-    process.exit(1)
-
-
-kurento(nconf.get('kurento:url'), nconf.get('kurento:options'))
-.then (kurentoClient) ->
-
-  return new Promise (resolve) ->
-    serverOptions = {
-      host: nconf.get('host')
-      port: nconf.get('port')
-      path: nconf.get('path')
-    }
-
-    wss = ws.Server(serverOptions, resolve)
-
-    require('./chat.coffee')(wss, kurentoClient)
-
-    if sentryClient
-      wss.on 'error', (error) ->
-        sentryClient.captureException(error)
-
-.then ->
-  console.log 'server: started at',
-    "#{nconf.get 'host'}:#{nconf.get 'port'}"
-
-.catch (error) ->
-  console.log 'error:', error.message

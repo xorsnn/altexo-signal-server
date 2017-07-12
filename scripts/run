@@ -1,8 +1,12 @@
 #!/bin/bash
 
-export NVM_DIR=~/.nvm
-source "$NVM_DIR/nvm.sh"
-
-source scripts/setup_env
-
-exec node index.js --config="${ALTEXO_CHAT_CONFIG}"
+# TODO: remove after check
+# export NVM_DIR=~/.nvm
+#
+# source "$NVM_DIR/nvm.sh"
+# nvm use default
+#
+# source scripts/setup_env
+# exec node index.js --config="${ALTEXO_CHAT_CONFIG}"
+npm install
+exec node index.js --config="$1"

@@ -1,67 +1,64 @@
 BaseRoom = require './base.coffee'
 
+module.exports = ->
+  class P2pRoom extends BaseRoom
 
-class P2PRoom extends BaseRoom
+    RoomError = {
+      ONLY_TWO_PERSONS_ALLOWED: 2001
+    }
 
-  RoomError = {
-    ONLY_TWO_PERSONS_ALLOWED: 2001
-  }
+    _peer: null
 
-  _peer: null
+    getProfile: ->
+      Object.assign({ p2p: true }, super())
 
-  open: (user) ->
-    console.log '>> open p2p room'
+    create: (user) ->
+      this.creator = user
+      this.addUser(user)
 
-    this.creator = user
-    this.addUser(user)
+    destroy: ->
+      this.emit('destroy')
 
-  close: ->
-    console.log '>> close p2p room'
+      Promise.resolve(true)
 
-    this.emit('close')
-    return Promise.resolve(true)
+    addUser: (user) ->
+      this._addUser(user).then =>
+        this.emit('user:enter', user)
 
-  addUser: (user) ->
-    this._addUser(user).then =>
-      this.emit('user:enter', user)
-      return true
+    _addUser: (user) ->
+      if this.members.size > 1
+        return Promise.reject {
+          code: RoomError.ONLY_TWO_PERSONS_ALLOWED
+          message: 'only two persons allowed'
+        }
+      this.members.add(user)
+      unless user is this.creator
+        this._peer = user
+      return Promise.resolve(true)
 
-  _addUser: (user) ->
-    if this.members.size > 1
-      console.log '>> forbid user enter'
-      return Promise.reject {
-        code: RoomError.ONLY_TWO_PERSONS_ALLOWED
-        message: 'only two persons allowed'
-      }
-    console.log '>> add p2p user', user.id
-    this.members.add(user)
-    unless user is this.creator
-      this._peer = user
-    return Promise.resolve(true)
+    removeUser: (user) ->
+      this._removeUser(user).then =>
+        this.emit('user:leave', user)
 
-  removeUser: (user) ->
-    this._removeUser(user).then =>
-      this.emit('user:leave', user)
-      return true
+    _removeUser: (user) ->
+      unless this.members.has(user)
+        throw new Error('cannot remove not existing user')
+      this.members.delete(user)
+      if user is this._peer
+        this._peer = null
+      return Promise.resolve(true)
 
-  _removeUser: (user) ->
-    unless this.members.has(user)
-      throw new Error('cannot remove not existing user')
-    console.log '>> remove p2p user', user.id
-    this.members.delete(user)
-    if user is this._peer
-      this._peer = null
-    return Promise.resolve(true)
+    processIceCandidate: (user, candidate) ->
+      if user is this.creator
+        this._peer.sendCandidate(candidate)
+      else
+        this.creator.sendCandidate(candidate)
+      return
 
-  processIceCandidate: (user, candidate) ->
-    if user is this.creator
-      this._peer.sendCandidate(candidate)
-    else
-      this.creator.sendCandidate(candidate)
-    return
+    processOffer: (user, offerSdp) ->
+      this.creator.sendOffer(offerSdp)
 
-  processOffer: (user, offerSdp) ->
-    this.creator.sendOffer(offerSdp)
-
-
-module.exports = P2PRoom
+    restartPeer: (sender) ->
+      if sender is this.creator
+        return this._peer.sendRestart()
+      return this.creator.sendRestart()
