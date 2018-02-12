@@ -1,48 +1,47 @@
 # ALTEXO SIGNAL #
 
-В основе работы сервиса используется вариант протокола [JSON-RPC 2.0](http://www.jsonrpc.org/specification) поверх [WebSocket](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket) транспорта. В отличии от оригинального JSON-RPC:
+Service is based on [JSON-RPC 2.0](http://www.jsonrpc.org/specification) protocol over [WebSocket](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket) transport unlike original JSON-RPC.
 
-* соединения не являются stateless;
-* при обмене сообщениями поле `jsonrpc` не используется.
+*   connections are not stateless;
+*   field `jsonrpc` is not used while message exchanging.
 
 ## Back-end ##
 
-### Запросы ###
+### Requests ###
 
-* `id -> string` получить uuid соединения;
-* `authenticate [ token ] -> boolean` аутентификация соединения;
-* `room/open [ name, p2p ] -> boolean` создание комнаты;
-* `room/close -> boolean` закрытие текущей комнаты;
-* `room/enter [ name ] -> boolean` вход в созданную комнату;
-* `room/leave -> boolean` выход из текущей комнаты;
-* `room/offer [ offerSdp ] -> answerSdp` отправление SDP предложения и получение SDP отклика в результате;
-* `peer/restart -> boolean` реинициализация удаленной точки WebRTC для создания нового соединения.
+*   `id -> string` get connection uuid;
+*   `authenticate [ token ] -> boolean` connection authentication;
+*   `room/open [ name, p2p ] -> boolean` create room;
+*   `room/close -> boolean` close room;
+*   `room/enter [ name ] -> boolean` enter room;
+*   `room/leave -> boolean` leave room;
+*   `room/offer [ offerSdp ] -> answerSdp` send SDP offer and get SDP response as a result;
+*   `peer/restart -> boolean` reinitialize remote WebRTC point to create new connection.
 
-### Уведомления ###
+### Notifications ###
 
-* `user/alias [ name ]` установка псевдонима пользователя;
-* `user/mode [ value ]` установка режима передачи данных (аудио/видео);
-* `room/text [ text ]` отправление текстового сообщения в общий чат комнаты;
-* `room/ice-candidate [ candidate ]` передача обнаруженного ICE candidate.
+*   `user/alias [ name ]` setting user nickname;
+*   `user/mode [ value ]` setting mode of data streaming (audio/video);
+*   `room/text [ text ]` sending messages to the room chat;
+*   `room/ice-candidate [ candidate ]` sending ICE candidate.
 
 ## Front-end ##
 
-### Запросы ###
+### Requests ###
 
-* `offer [ offerSdp ] -> answerSdp` отправление SDP предложения и получение SDP отклика в результате;
-* `restart -> boolean` реинициализация удаленной точки WebRTC для создания нового соединения.
+*   `offer [ offerSdp ] -> answerSdp` sending SDP offer end getting SDP response as a result;
+*   `restart -> boolean` reinitialize remote WebRTC point to create new connection.
 
-### Уведомления ###
+### Notifications ###
 
-* `ice-candidate [ candidate ]` передача обрнаруженного ICE candidate;
-* `room/contacts [ contact-list ]` обновление списка контактов в комнате;
-* `room/text [ text, contact ]` сообщение из текстового чата;
-* `room/destroy` комната закрыта.
+*   `ice-candidate [ candidate ]` sending ICE candidate;
+*   `room/contacts [ contact-list ]` refresh contacts list in the room;
+*   `room/text [ text, contact ]` message from the text chat;
+*   `room/destroy` room closed.
 
-### Запуск ###
-
+### Run server ###
+```
 $ docker-compose build
-
 $ docker-compose up
-
-сервер доступен по 127.0.0.1:8080
+```
+server is avaliable 127.0.0.1:8080
