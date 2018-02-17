@@ -1,4 +1,5 @@
 altexo_filebeat:
+  restart: always
   image: prima/filebeat:5.2.1
   container_name: signal.altexo.com_filebeat
   volumes:
@@ -7,6 +8,7 @@ altexo_filebeat:
     - ./scripts/deploy/filebeat/filebeat.template-es2x.json:/filebeat.template-es2x.json
     - ./log:/log
 altexo_signal_node:
+  restart: always
   build: .
   command: ./scripts/run ${CONFIG_FILE}
   container_name: signal.altexo.com
